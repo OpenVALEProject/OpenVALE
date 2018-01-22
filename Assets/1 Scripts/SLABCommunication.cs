@@ -1,11 +1,11 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 using System.IO;
+using System.Xml.XPath;
 
 public class SLABCommunication : MonoBehaviour
 {
@@ -23,7 +23,6 @@ public class SLABCommunication : MonoBehaviour
 	private System.Random chooser = new System.Random();
 	public bool triggerFeedback = false;
 	private bool feedbackFinished = true;
-
 	private string HRTFDir = ConfigurationUtil.HRTFDir;
 	//private string HRTFName = ConfigurationUtil.HRTFName;
 	private string wavDir = ConfigurationUtil.wavDir;
@@ -43,30 +42,15 @@ public class SLABCommunication : MonoBehaviour
 	void Awake()
 	{
 
-		foreach (var process in Process.GetProcessesByName("WinAudioServer"))
+		foreach (var process in Process.GetProcessesByName("AudioServer3 (32 bit)"))
 		{
 			process.Kill();
 
 
 		}
-
-
-
-
-		/*
-		foreach (var process in Process.GetProcesses())
-		{
-			if(process.ProcessName.Equals("WinAudioServer"))
-				process.Kill();
-
-
-		}
-		*/
-
-
-		slabProcess = new Process();//"C:\\VirtualAudio\\SlabServer\\WinAudioServer.exe");
-		slabProcess.StartInfo.FileName = "C:\\VirtualAudio\\SlabServer\\WinAudioServer.exe";
-        slabProcess.StartInfo.WorkingDirectory = "C:\\VirtualAudio\\SlabServer";
+        slabProcess = new Process();
+		slabProcess.StartInfo.FileName = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\AudioServer3.exe";
+        slabProcess.StartInfo.WorkingDirectory = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\";
 
 
 		//UnityEngine.Debug.Log("Should have waited longer?");
@@ -92,11 +76,9 @@ public class SLABCommunication : MonoBehaviour
             }
 
         }
+
 		slabStream = slabConnection.GetStream();
-
-
-
-
+        
 		Thread.Sleep(2000);
 
 		//string r;
@@ -110,19 +92,7 @@ public class SLABCommunication : MonoBehaviour
             sendMessageToSlab("selectOutDevice(" + outDevice + ")");
         }
 		sendMessageToSlab("setWavePath(" + wavDir + ")");
-
-		//sendMessageToSlab("allocateWaveSource(" + wavName + ",1,1,0)");
-		//sendMessageToSlab("enableSource(1,1)");
 		sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
-		//sendMessageToSlab("startRendering(0,0)");
-		//sendMessageToSlab("setSourceGain(1, 0)");
-
-		//response= r;
-        
-
-
-
-
 
 	}
     public void Reset() {
@@ -136,77 +106,17 @@ public class SLABCommunication : MonoBehaviour
         Thread.Sleep(500);
 
         sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
-        //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
-        //sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
-        //sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
-        //sendMessageToSlab("selectOutDevice(" + outDevice + ")");
         sendMessageToSlab("setWavePath(" + wavDir + ")");
-
-        //sendMessageToSlab("allocateWaveSource(" + wavName + ",1,1,0)");
-        //sendMessageToSlab("enableSource(1,1)");
         sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
-        //Thread.Sleep(6000);
-        //sendMessageToSlab("startRendering(0,0)");
-        //sendMessageToSlab("setSourceGain(1, 0)");
-
-        /*
-        foreach (var process in Process.GetProcessesByName("WinAudioServer"))
-        {
-            process.Kill();
-
-
-        }
-
-
-
-
-       
-
-
-        slabProcess = new Process();//"C:\\VirtualAudio\\SlabServer\\WinAudioServer.exe");
-        slabProcess.StartInfo.FileName = "C:\\VirtualAudio\\SlabServer\\WinAudioServer.exe";
-        slabProcess.StartInfo.WorkingDirectory = "C:\\VirtualAudio\\SlabServer";
-
-
-        //UnityEngine.Debug.Log("Should have waited longer?");
-        slabProcess.Start();
 
         Thread.Sleep(2000);
 
-        slabConnection = new TcpClient("127.0.0.1", port);
-        if (slabConnection.Connected)
-        {
-            UnityEngine.Debug.Log("Connected");
-
-        }
-        slabStream = slabConnection.GetStream();
-
-
-
-
-        Thread.Sleep(2000);
-
-        //string r;
         sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
-        //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
         sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
         sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
         sendMessageToSlab("selectOutDevice(" + outDevice + ")");
         sendMessageToSlab("setWavePath(" + wavDir + ")");
-
-        //sendMessageToSlab("allocateWaveSource(" + wavName + ",1,1,0)");
-        //sendMessageToSlab("enableSource(1,1)");
         sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
-        //sendMessageToSlab("startRendering(0,0)");
-        //sendMessageToSlab("setSourceGain(1, 0)");
-
-        //response= r;
-    
-    
-    */
-    
-    
-    
     }
 
 	// Update is called once per frame
@@ -227,7 +137,7 @@ public class SLABCommunication : MonoBehaviour
 			if (init)
 			{
 
-
+                /*
 				//positions = gameObject.GetComponent("WorldMaker");
 				WorldMaker w = gameObject.GetComponent<WorldMaker>();
 				soundSourceList = w.sphereLocations;
@@ -246,6 +156,7 @@ public class SLABCommunication : MonoBehaviour
 				sendMessageToSlab("presentSource(1," + slabX + "," + slabY + "," + slabZ + ")");
 				sendMessageToSlab("muteSource(1,0)");
 				init = false;
+                */
 			}
 
 			if (Time.time > nextSound && feedbackFinished)

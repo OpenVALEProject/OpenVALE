@@ -29,7 +29,6 @@ public class SocketCommunicationHandler : MonoBehaviour
 	public Material defaultMat;
 	private List<GameObject> disabledObjects = new List<GameObject>();
 	public GameObject cursor;
-	public StimulusPlayer stimulusPlayer;
     public bool clientDisconnect = false;
 
 
@@ -266,15 +265,8 @@ public class SocketCommunicationHandler : MonoBehaviour
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     UnityEngine.Debug.Log("Hiding the cursor");
                     GameObject cursorObject = GameObject.FindGameObjectWithTag("Cursor");
-                    Crosshair3D c3D = cursorObject.GetComponent<Crosshair3D>();
-                    if (paramList[0].ToUpper().Equals("T"))
-                    {
-                        c3D.hideCursor();
-                    }
-                    else {
-                        c3D.showCursor();
                     
-                    }
+                    
                     
                     //MeshRenderer cursorRenderer = cursorObject.GetComponent<MeshRenderer>();
                     //cursorRenderer.material.SetColor(0, new Color(cursorRenderer.material.color.r, cursorRenderer.material.color.g,cursorRenderer.material.color.b, 0.0f));
@@ -318,10 +310,6 @@ public class SocketCommunicationHandler : MonoBehaviour
 						soundObject.SetActive(false);
 						
 
-					}
-					if (stimulusPlayer != null)
-					{
-						stimulusPlayer.CreateSound(soundObject);
 					}
 					
 

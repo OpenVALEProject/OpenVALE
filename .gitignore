@@ -9,3 +9,9 @@ Temp/
 *.csproj
 Assets/Plugins/Android/Assets/OSIG_Readme.txt
 Assets/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs
+*.fbx
+*.mat
+*.png
+*.suo
+*.txt
+*.unity

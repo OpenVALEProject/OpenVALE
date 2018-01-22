@@ -19,5 +19,7 @@ public class ConfigurationUtil  {
     public static bool isUseWand = true;
     public static bool isTestMode = false;
     public static string inputDevice = "W";
+    public static string spatialAudioServer = "";
+    public static bool useSpatialAudioServer = true;
 
 }

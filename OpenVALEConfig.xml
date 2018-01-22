@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <applicationSettings>
+	<setting name="SpatialAudioServerRootDir" serializeAs="string">
+			<UseSpatialAudioServer>1</UseSpatialAudioServer>
+			<value>D:\Development\SLAB</value>
+		</setting>
+  </applicationSettings>
+</configuration>
