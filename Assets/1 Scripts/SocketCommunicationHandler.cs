@@ -419,7 +419,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         string fname = paramList[5].Split('=')[1];
                         if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
                         {
-                            reply = SLABCommunication.sendMessageToSlab("allocWaveSrc " + fname + "," + sourceHRTFID + ",0,0");
+                            reply = SLABCommunication.sendMessageToSlab("allocWaveSrc " + fname + "," + sourceHRTFID + ",1,0");
                             reply = reply.Trim().Trim(';');
                         }
                         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
@@ -474,7 +474,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     {
                         if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
                         {
-                            reply = SLABCommunication.sendMessageToSlab("allocSigGenSrc N,1.0,1000," + sourceHRTFID + ",1");
+                            reply = SLABCommunication.sendMessageToSlab("allocSigGenSrc N,1.0,1000," + sourceHRTFID + ",0");
                             reply = reply.Trim().Trim(';');
                         }
                         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
@@ -531,7 +531,7 @@ public class SocketCommunicationHandler : MonoBehaviour
 
                             if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
                             {
-                                reply = SLABCommunication.sendMessageToSlab("allocAsioSrc " + sourceHRTFID);
+                                reply = SLABCommunication.sendMessageToSlab("allocAsioSrc " + sourceHRTFID + ",0");
                                 replyCheck = reply.Trim().Trim(';').Split(',');
 
                                 if (int.TryParse(replyCheck[replyCheckIndex], out replyCode))
@@ -613,7 +613,9 @@ public class SocketCommunicationHandler : MonoBehaviour
                                 }
                                 else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
                                 {
-                                    linkedReply = SLABCommunication.sendMessageToSlab("allocLinkedSrc(" + otherSources + "," + sourceHRTFID + ",0)");
+                                    linkedReply = SLABCommunication.sendMessageToSlab("allocLinkedSrc " + sourceID + "," + otherSources + "," + sourceHRTFID + ",0");
+                                    //linkedReply = SLABCommunication.sendMessageToSlab("allocAsioSrc " + sourceHRTFID + ",0");
+                                    //linkedReply = SLABCommunication.sendMessageToSlab("allocLinkedSrc 1," + sourceHRTFID + ",0");
                                     replyCheck = linkedReply.Trim().Trim(';').Split(',');
                                     if (int.TryParse(replyCheck[replyCheckIndex], out replyCode))
                                     {

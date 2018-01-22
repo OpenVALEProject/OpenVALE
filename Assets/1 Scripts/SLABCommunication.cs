@@ -63,7 +63,14 @@ public class SLABCommunication : MonoBehaviour
             slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
         }
         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3) {
-            UnityEngine.Debug.Log(spatialAudioServerDirectory + "AudioServer3.exe");
+            if (ConfigurationUtil.spatialAudioServer[0].Equals('.'))
+            {
+                ConfigurationUtil.spatialAudioServer= ConfigurationUtil.spatialAudioServer.TrimStart('.');
+                ConfigurationUtil.spatialAudioServer= ConfigurationUtil.spatialAudioServer.TrimStart('\\');
+                ConfigurationUtil.spatialAudioServer= Path.Combine(System.Environment.CurrentDirectory, ConfigurationUtil.spatialAudioServer);
+            }
+            spatialAudioServerDirectory = ConfigurationUtil.spatialAudioServer;
+            
             slabProcess = new Process();
             slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\AudioServer3.exe";
             slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
@@ -115,14 +122,19 @@ public class SLABCommunication : MonoBehaviour
         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
         {
             sendMessageToSlab("hrtfPath " + HRTFDir + "");
-            sendMessageToSlab("defAsioOutChMap " + channelMap + "");
-            sendMessageToSlab("defAsioInChMap " + outChannelMap + "");
+            
+            //sendMessageToSlab("defAsioOutChMap " + outChannelMap + "");
+           
             if (!outDevice.Equals(""))
             {
                 UnityEngine.Debug.Log("ASIO");
-                sendMessageToSlab("outDev " + outDevice + "");
+               //sendMessageToSlab("outDev " + outDevice + ",0");
             }
+            sendMessageToSlab("defAsioInChMap " + channelMap + "");
             sendMessageToSlab("wavePath " + wavDir + "");
+            string slabDirectory = Path.Combine(spatialAudioServerDirectory, "slab3d");
+            UnityEngine.Debug.Log(sendMessageToSlab("slabRoot " + slabDirectory));
+            sendMessageToSlab("binPath bin");
             sendMessageToSlab("setFirTaps " + FIRTaps + "");
         }
     }
@@ -155,7 +167,12 @@ public class SLABCommunication : MonoBehaviour
 
             sendMessageToSlab("hrtfPath " + HRTFDir + "");
             //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
+            //sendMessageToSlab("defAsioOutChMap " + channelMap + "");
+            sendMessageToSlab("defAsioInChMap " + channelMap + "");
             sendMessageToSlab("wavePath " + wavDir + "");
+            string slabDirectory = Path.Combine(spatialAudioServerDirectory, "slab3d");
+            UnityEngine.Debug.Log(sendMessageToSlab("slabRoot " + slabDirectory));
+            sendMessageToSlab("binPath bin");
             sendMessageToSlab("setFirTaps " + FIRTaps + "");
 
 
@@ -271,6 +288,7 @@ public class SLABCommunication : MonoBehaviour
             }
 
             //GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
+            
             roll = camera.transform.rotation.eulerAngles.z;
             while (roll > 180)
             {
@@ -362,7 +380,7 @@ public class SLABCommunication : MonoBehaviour
                 sendMessageToSlab("updateSource(" + S.sourceID + "," + relativePosition.x + "," + relativePosition.y + "," + relativePosition.z);
             }
         }
-        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer) { 
+        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3) { 
             Vector3 FLTCameraPosition = HelperFunctions.UnityXYZToFLT(cameraPosition);
             sendMessageToSlab("updateLst6DOF " + FLTCameraPosition.x + "," + -FLTCameraPosition.y + "," + FLTCameraPosition.z + "," + yaw + ", " + -pitch + ", " + -roll);
         }

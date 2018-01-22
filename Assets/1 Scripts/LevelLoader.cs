@@ -51,11 +51,11 @@ public class LevelLoader : MonoBehaviour
                         rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
                         break;
                     case ("ASIOOutputChannels"):
-                        ConfigurationUtil.channelMap = t.Trim().Replace('/', '\\');
+                        ConfigurationUtil.outChannelMap = t.Trim().Replace('/', '\\');
                         rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
                         break;
                     case ("ASIOInputChannels"):
-                        ConfigurationUtil.outChannelMap = t.Trim().Replace('/', '\\');
+                        ConfigurationUtil.channelMap = t.Trim().Replace('/', '\\');
                         rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
                         break;
                     case ("HRTFDirectory"):

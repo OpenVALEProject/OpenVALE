@@ -2,25 +2,23 @@
 <configuration>
   <applicationSettings>
 	<setting name="SpatialAudioServerRootDir" serializeAs="string">
-			<value>D:/Development/AudioServer3/AudioServer3/bin/Debug</value>
+			<value>./DemoServer</value>
 		</setting>
 	<setting name="SpatialAudioEngineType" serializeAs="string">
 			<value>AudioServer3</value>
 		</setting>
 	<setting name="ASIOInputChannels" serializeAs="string">
-			<value>3,4,5,6</value>
+			<value>0,1,2,3,4,5,6,7</value>
 		</setting>
-	<setting name="ASIOOutputChannels" serializeAs="string">
-			<value>1,2</value>
-		</setting>
+	
 	<setting name="HRTFDirectory" serializeAs="string">
-			<value>C:\VirtualAudio\HRTFs</value>
+			<value>C:/VirtualAudio/HRTFs</value>
 		</setting>
 	<setting name="WavDirectory" serializeAs="string">
-			<value>C:\VirtualAudio\WaveFiles</value>
+			<value>C:/VirtualAudio/WaveFiles</value>
 		</setting>
 	<setting name="OutDeviceParams" serializeAs="string">
-			<value></value>
+			<value>ASIO</value>
 		</setting>
 	<setting name="LevelName" serializeAs="string">
 				<value></value>
