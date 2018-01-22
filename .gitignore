@@ -62,3 +62,6 @@ Assets/OVR/Plugins/placeholder.txt
 Assets/OVR/Plugins/1.14.1/Android/
 Assets/OVR/Plugins/1.14.1/OSXUniversal/
 Assets/Plugins/Android/
+*.shader
+*.cginc
+Assets/Fonts/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs
