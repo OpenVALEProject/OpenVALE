@@ -11,6 +11,7 @@ using System.Threading;
 using System.IO;
 using System.Text;
 using System.Xml.XPath;
+using UnityEngine.EventSystems;
 
 public class SLABCommunication : MonoBehaviour
 {
@@ -529,7 +530,36 @@ public class SLABCommunication : MonoBehaviour
         }
         else if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive &&Input.GetKeyDown(KeyCode.Space)) {
             TriggerPressed();
+        if (ConfigurationUtil.useRift ){
+            if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger))
+            {
+                TriggerPressed();
+            }
+            if (OVRInput.GetDown(OVRInput.Button.Two)) {
+
+                EscapeButtonPressed();
+            }
         }
+        else if (ConfigurationUtil.useVive )
+        {
+            if (SteamVR_Controller.Input(3).GetPressDown(SteamVR_Controller.ButtonMask.Trigger))
+            {
+                TriggerPressed();
+            }
+            if (SteamVR_Controller.Input(3).GetPressDown(SteamVR_Controller.ButtonMask.ApplicationMenu))
+            {
+                EscapeButtonPressed();
+            }
+        }
+        else if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive ) {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                TriggerPressed();
+            }
+            if (Input.GetKeyDown(KeyCode.Q)) {
+                EscapeButtonPressed();
+            }
+         }
         
 	}
     private void TriggerPressed() {

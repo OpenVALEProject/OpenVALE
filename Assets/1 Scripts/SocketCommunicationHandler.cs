@@ -16,14 +16,17 @@ public class SocketCommunicationHandler : MonoBehaviour
 {
 	
 	Socket serverSocket;
-	List<Socket> clients = new List<Socket>();
+    Socket monitorSocket;
+    List<Socket> monitors = new List<Socket>();
+    List<Socket> clients = new List<Socket>();
 	List<Thread> clientThreads = new List<Thread>();
 	List<MessageContainer> clientMessages = new List<MessageContainer>();
 	Object messageListLock = new Object();
 	private string messageMatchingExpression = "(.+)\\((.*)\\)";
 	private Dictionary<string, Vector3> sourcesToInitOnRender = new Dictionary<string, Vector3>();
 	Thread mainThread;
-	public Material highlightMat;
+    Thread monitorThread;
+    public Material highlightMat;
 	public Material defaultMat;
 	private List<GameObject> disabledObjects = new List<GameObject>();
 	public GameObject cursor;
@@ -43,6 +46,8 @@ public class SocketCommunicationHandler : MonoBehaviour
 		clientMessages = new List<MessageContainer>();
 		mainThread = new Thread(WaitForConnections);
 		mainThread.Start();
+        monitorThread = new Thread(WaitForMonitorConnections);
+        monitorThread.Start();
         currentEngine = ConfigurationUtil.engineType;
     }
 
@@ -93,11 +98,25 @@ public class SocketCommunicationHandler : MonoBehaviour
             clientThreads.Add(tConnectMonitor);
             tConnectMonitor.Start();
         }
-
-
-
-
+        
 	}
+    private void WaitForMonitorConnections()
+    {
+        IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+        IPAddress ipAddress = ipHostInfo.AddressList[0];
+        IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, 43202);
+        monitorSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        monitorSocket.Bind(localEndPoint);
+        monitorSocket.Listen(10);
+
+        while (true)
+        {
+
+            Socket tempSock = monitorSocket.Accept();
+            monitors.Add(tempSock);
+        }
+
+    }
     void MonitorThreads() {
        
         while (true) {
@@ -158,6 +177,11 @@ public class SocketCommunicationHandler : MonoBehaviour
         {
             Thread.Sleep(300);
         }
+        foreach (Socket mon in monitors) {
+            mon.Disconnect(false);
+        }
+        monitors.Clear();
+
         clientDisconnect = true;
     }
     private void ProcessMessage(MessageContainer mC)
@@ -1552,6 +1576,19 @@ public class SocketCommunicationHandler : MonoBehaviour
         n.Close();
 
 
+    }
+    public void sendCancel()
+    {
+        string reply = "quit";
+        foreach (Socket mon in monitors)
+        {
+            NetworkStream n = new NetworkStream(mon);
+            StreamWriter writer = new StreamWriter(n, ASCIIEncoding.ASCII);
+            writer.WriteLine(reply);
+            writer.Flush();
+            writer.Close();
+            n.Close();
+        }
     }
     void OnDestroy()
 	{
