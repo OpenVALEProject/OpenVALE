@@ -13,8 +13,15 @@ using UnityEngine.UI;
 
 public class TextEdit : MonoBehaviour {
     public Text text;
-    private string defaultText;
+    public Button enter;
+    public Button backspace;
+    public Button[] numberButtons;
+    public int minNumsRequired = 1;
+    public int maxNumsRequired = 4;
     public SocketCommunicationHandler sc;
+
+    private string defaultText;
+
     private void Start()
     {
         defaultText = text.text;
@@ -25,6 +32,8 @@ public class TextEdit : MonoBehaviour {
     {
         text.text = txt;
         defaultText = txt;
+
+        CheckButtonInteraction();
     }
 
     private void ClearIfDefault()
@@ -36,20 +45,65 @@ public class TextEdit : MonoBehaviour {
     public void AppendText(int num)
     {
         ClearIfDefault();
-        if (text.text.Length < 4)
+        if (text.text.Length < maxNumsRequired)
             text.text += num.ToString();
+        
+        CheckButtonInteraction();
+    }
+
+    private void CheckButtonInteraction()
+    {
+        // backspace control - if there is text, enable it; empty? disable it
+        if (text.text.Length > 0)
+            backspace.interactable = true;
         else
-            text.text = text.text.Remove(0,1) + num.ToString();
+            backspace.interactable = false;
+
+        // enter control - if text length is between min and max, enable it
+        //                 (max is already forced by UI)
+        if (text.text.Length >= minNumsRequired)
+            enter.interactable = true;
+        else
+            enter.interactable = false;
+
+        if (text.text.Length >= maxNumsRequired)
+            InteractWithNumberButtons(false);
+        else
+            InteractWithNumberButtons(true);
+
+        if (defaultText.Contains(text.text))
+        {  // e.g., "Enter Subject ID" text is (at least in part) visible
+            backspace.interactable = false;
+            enter.interactable = false;
+
+            InteractWithNumberButtons(true);
+        }
+    }
+
+    private void InteractWithNumberButtons(bool value)
+    {
+        foreach (Button b in numberButtons)
+            b.interactable = value;
     }
 
     public void OnEnter()
     {
-        if (text.text.Length != 4)
-            return;
+        // >>> start enter function code
         string message = "getsubjectnumber," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + text.text;
         sc.sendMessage(message, ConfigurationUtil.waitingClient);
+        ChangeText("Enter Subject ID");
         sc.SubjectNumberCanvas.SetActive(false);
         ConfigurationUtil.waitingForSubjectNum = false;
         ConfigurationUtil.waitingClient = null;
+        
+        // <<< end enter function code 
+
+        CheckButtonInteraction();
+    }
+
+    public void OnBackspace()
+    {
+        text.text = text.text.Remove(text.text.Length - 1);
+        CheckButtonInteraction();
     }
 }

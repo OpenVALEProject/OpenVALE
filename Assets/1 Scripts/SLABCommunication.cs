@@ -51,6 +51,8 @@ public class SLABCommunication : MonoBehaviour
     private bool enteredTolerance = false;
     private float toleranceTime = 0.0f;
     public Transform VIVEOffset;
+    private GameObject currentlySelectedButton;
+    public GameObject subjectNumberBeam;
 
 	// Use this for initialization
 	void Start()
@@ -80,8 +82,7 @@ public class SLABCommunication : MonoBehaviour
             slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
         }
         slabProcess.Start();
-
-		Thread.Sleep(500);
+        Thread.Sleep(500);
         while (true)
         {
             try
@@ -461,7 +462,6 @@ public class SLABCommunication : MonoBehaviour
         }
         if (ConfigurationUtil.waitingForRecenter) {
             Vector3 targetAlignment = (ConfigurationUtil.recenterPosition - camera.transform.position).normalized;
-            UnityEngine.Debug.Log(camera.transform.forward);
             if (Mathf.Acos(Vector3.Dot(camera.transform.forward, targetAlignment)) < ConfigurationUtil.recenterTolerance)
             {
                 
@@ -518,18 +518,20 @@ public class SLABCommunication : MonoBehaviour
 
 
         }
+
+        if (ConfigurationUtil.waitingForSubjectNum) {
+            
+            WaitingForSubjectNumberUI();
+            
+        }
+        else
+        {
+
+            subjectNumberBeam.SetActive(false);
+        }
         
 
-        
-        if (ConfigurationUtil.useRift && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger)){
-            TriggerPressed();
-        }
-        else if (ConfigurationUtil.useVive && SteamVR_Controller.Input(3).GetPressDown(SteamVR_Controller.ButtonMask.Trigger))
-        {            
-            TriggerPressed();
-        }
-        else if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive &&Input.GetKeyDown(KeyCode.Space)) {
-            TriggerPressed();
+
         if (ConfigurationUtil.useRift ){
             if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger))
             {
@@ -564,47 +566,31 @@ public class SLABCommunication : MonoBehaviour
 	}
     private void TriggerPressed() {
 
-        if (ConfigurationUtil.waitingForSubjectNum) {
+        if (ConfigurationUtil.waitingForSubjectNum)
+        {
             Vector3 origin = Vector3.zero;
             Vector3 toDirection = Vector3.zero;
-            if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive && Input.GetKeyDown(KeyCode.Space)) {
+            if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive && Input.GetKeyDown(KeyCode.Space))
+            {
                 origin = Vector3.zero;
                 toDirection = Camera.main.transform.forward;
-                
+
             }
             else if (ConfigurationUtil.useRift || ConfigurationUtil.useVive)
             {
-                if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand)
+                if (ConfigurationUtil.useRift)
                 {
-                    if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.crosshair)
-                    {
-                        if (ConfigurationUtil.useRift)
-                        {
-                            origin = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
-                            toDirection = (crossHair.transform.position - UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye)).normalized * 2.08f;
-                        }
-                        else if (ConfigurationUtil.useVive)
-                        {
-                            origin = VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
-                            toDirection = (crossHair.transform.position - (VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye))).normalized * 2.08f;
-                          
+                    //origin = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                    //toDirection = ((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized) * 3f;
+                    origin = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
+                    toDirection = ((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized) * 3f;
+                }
+                else if (ConfigurationUtil.useVive)
+                {
+                    origin = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye) + VIVEOffset.position;
+                    toDirection = ((SteamVR_Controller.Input(3).transform.rot * Vector3.forward).normalized * 3f);
+                }
 
-                        }
-                    }
-                }
-                else if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hmd)
-                {
-                    if (ConfigurationUtil.currentCursorType != ConfigurationUtil.CursorType.crosshair)
-                    {
-                        origin = VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
-                        toDirection = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward;
-                    }
-                    else
-                    {
-                        origin = VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
-                        toDirection = (crossHair.transform.position - (VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye))).normalized;
-                    }
-                }
             }
             Ray r = new Ray(origin, toDirection);
             RaycastHit[] hits = Physics.RaycastAll(r, 50);
@@ -618,12 +604,13 @@ public class SLABCommunication : MonoBehaviour
                 }
             }
         }
-        if (ConfigurationUtil.waitingForResponse)
+        else if (ConfigurationUtil.waitingForResponse)
         {
 
             string message = "waitForResponse," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",";
             Vector3 intersectionPoint = Vector3.zero;
-            if (ConfigurationUtil.useRift || ConfigurationUtil.useVive) {
+            if (ConfigurationUtil.useRift || ConfigurationUtil.useVive)
+            {
                 if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand)
                 {
                     if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
@@ -632,7 +619,8 @@ public class SLABCommunication : MonoBehaviour
                         {
                             intersectionPoint = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
                         }
-                        else if (ConfigurationUtil.useVive) {
+                        else if (ConfigurationUtil.useVive)
+                        {
                             intersectionPoint = (SteamVR_Controller.Input(3).transform.rot * Vector3.forward).normalized * 2.08f;
                         }
                     }
@@ -663,12 +651,85 @@ public class SLABCommunication : MonoBehaviour
             ConfigurationUtil.waitStartTime = 0.0f;
 
         }
+                       
     }
 
 
-	
 
-	void OnDestroy()
+    private void WaitingForSubjectNumberUI() {
+        subjectNumberBeam.SetActive(true);
+        Vector3 origin = Vector3.zero;
+        Vector3 toDirection = Vector3.zero;
+        if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive )
+        {
+            origin = Vector3.zero;
+            toDirection = Camera.main.transform.forward;
+
+        }
+        else if (ConfigurationUtil.useRift || ConfigurationUtil.useVive)
+        {
+
+            
+                if (ConfigurationUtil.useRift)
+                {
+                //origin = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                origin = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
+                toDirection = ((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized) * 3f;
+                subjectNumberBeam.transform.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
+                subjectNumberBeam.transform.rotation = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) ;
+            }
+                else if (ConfigurationUtil.useVive)
+                {
+                    origin = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye) + VIVEOffset.position;
+                    toDirection = ((SteamVR_Controller.Input(3).transform.rot * Vector3.forward).normalized * 3f);
+            }
+           
+
+
+        }
+
+        Ray r = new Ray(origin, toDirection);
+        RaycastHit[] hits = Physics.RaycastAll(r, 50);
+        UnityEngine.UI.Button possibleButton;
+        bool foundHit = false;
+        foreach (RaycastHit RCH in hits)
+        {
+            possibleButton = RCH.collider.gameObject.GetComponent<UnityEngine.UI.Button>();
+            if (possibleButton != null)
+            {
+                foundHit = true;
+                if (currentlySelectedButton == null ){
+
+                    currentlySelectedButton = RCH.collider.gameObject;
+                    currentlySelectedButton.GetComponent<EventTrigger>().OnPointerEnter(null);
+
+                }
+                else if (currentlySelectedButton != possibleButton)
+                {
+                    currentlySelectedButton.GetComponent<EventTrigger>().OnPointerExit(null);
+                    currentlySelectedButton = RCH.collider.gameObject;
+                    currentlySelectedButton.GetComponent<EventTrigger>().OnPointerEnter(null);
+
+                }
+            }
+        }
+        if (!foundHit) {
+            if (currentlySelectedButton != null) {
+                currentlySelectedButton.GetComponent<EventTrigger>().OnPointerExit(null);
+                currentlySelectedButton = null;
+            }
+
+        }
+        
+    }
+
+    void EscapeButtonPressed() {
+        GetComponent<SocketCommunicationHandler>().sendCancel();
+ 
+    }
+
+
+    void OnDestroy()
 	{
 
 		slabProcess.Kill();
