@@ -230,23 +230,48 @@ public class SocketCommunicationHandler : MonoBehaviour
 
 
 			GameObject soundObject;
-			switch (match.Groups[1].Value.Trim())
+			switch (match.Groups[1].Value.Trim().ToLower())
 			{
 
-				case "loadHRTF":
-				case "muteSource":
-				case "switchHRTF":
-
-
-					//Debug.Log("Sending SLAB MESSAGE)");
-
-					reply = SLABCommunication.sendMessageToSlab(mC.message);
-
-					break;
+				case "sethrtf":
+				case "loadhrtf":
+				case "addaudiosource":
+                case "enablesrc":
+                case "startrendering":
+                    reply = SLABCommunication.sendMessageToSlab(mC.message);
+                    foreach (string key in sourcesToInitOnRender.Keys)
+                    {
+                        Vector3 loc = sourcesToInitOnRender[key];
+                        SLABCommunication.sendMessageToSlab("presentSource(" + key + "," + loc.x + "," + loc.y + "," + loc.z + ")");
+                        SLABCommunication.sendMessageToSlab("setSourceGain(" + key + ", 0)");
+                        //SLABCommunication.sendMessageToSlab("muteSource(" + key + ",0)");
+                    }
+                    sourcesToInitOnRender.Clear();
+                    break;
+                case "endrendering":
                 case "reset":
                     gameObject.GetComponent<SLABCommunication>().Reset();
                     reply = "1";
                     break;
+                case "definefront":
+                case "adjustsourcelevel":
+                case "adjustoveralllevel":
+                case "adjustsourceposition":
+                case "muteaudiosource":
+                case "setleds":
+                case "showfreecursor":
+                case "showsnappedcursor":
+                case "addlogtag":
+                case "waitforresponse":
+                case "waitforrecenter":
+                case "getheadorientation":
+                case "gethead6dof":
+                case "getnearestspeaker":
+                case "getspeakerposition":
+                case "getcurrenthrtf":
+                case "highlightlocation":
+                case "displaymessage":
+                  
                 case"useWand":
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     if (paramList[0].ToUpper().Equals("T"))
@@ -272,17 +297,8 @@ public class SocketCommunicationHandler : MonoBehaviour
                     //cursorRenderer.material.SetColor(0, new Color(cursorRenderer.material.color.r, cursorRenderer.material.color.g,cursorRenderer.material.color.b, 0.0f));
                     reply = "1";
                     break;
-				case "startRendering":
-					reply = SLABCommunication.sendMessageToSlab(mC.message);
-					foreach (string key in sourcesToInitOnRender.Keys)
-					{
-						Vector3 loc = sourcesToInitOnRender[key];
-						SLABCommunication.sendMessageToSlab("presentSource(" + key + "," + loc.x + "," + loc.y + "," + loc.z + ")");
-						SLABCommunication.sendMessageToSlab("setSourceGain(" + key + ", 0)");
-						//SLABCommunication.sendMessageToSlab("muteSource(" + key + ",0)");
-					}
-                    sourcesToInitOnRender.Clear();
-                    break;
+				
+
 				case "addASIOSource":
 					// addASIOSource (nhtf,channel, location, visible) 
 					paramList = match.Groups[2].Value.Trim().Split(',');
