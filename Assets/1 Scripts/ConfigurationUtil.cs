@@ -35,7 +35,7 @@ public static class ConfigurationUtil  {
     public static bool waitingForRecenter = false;
     public static Vector3 recenterPosition = Vector3.zero;
     public static float recenterTolerance = 0;
+    //public static AudioEngineType engineType = AudioEngineType.AudioServer3;//AudioEngineType.SLABServer;
     public static AudioEngineType engineType = AudioEngineType.SLABServer;
-
 
 }
