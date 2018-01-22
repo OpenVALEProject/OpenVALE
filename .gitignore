@@ -52,3 +52,13 @@ Assets/OVRInspector/
 *.dll
 Assets/Parse/
 *.unitypackage
+Assets/OVR/OVRGamepad.bundle/
+*.tif
+*.tga
+*.ttf
+Assets/OVR/Editor/AndroidManifest.OVRSubmission.xml
+*.obj
+Assets/OVR/Plugins/placeholder.txt
+Assets/OVR/Plugins/1.14.1/Android/
+Assets/OVR/Plugins/1.14.1/OSXUniversal/
+Assets/Plugins/Android/
