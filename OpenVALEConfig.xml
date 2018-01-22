@@ -7,24 +7,20 @@
 	<setting name="SpatialAudioEngineType" serializeAs="string">
 			<value>AudioServer3</value>
 		</setting>
-	<setting name="ASIOInputChannels" serializeAs="string">
-			<value>0,1,2,3,4,5,6,7</value>
-		</setting>
-	
 	<setting name="HRTFDirectory" serializeAs="string">
-			<value>C:/VirtualAudio/HRTFs</value>
+			<value>./HRTFs</value>
 		</setting>
 	<setting name="WavDirectory" serializeAs="string">
-			<value>C:/VirtualAudio/WaveFiles</value>
+			<value>./WaveFiles</value>
 		</setting>
 	<setting name="OutDeviceParams" serializeAs="string">
 			<value></value>
 		</setting>
 	<setting name="LevelName" serializeAs="string">
-				<value></value>
+				<value>GuessWho</value>
 			</setting>
 	<setting name="HMDType" serializeAs="string">
-			<value>Vive</value>
+			<value>None</value>
 		</setting>
   
   

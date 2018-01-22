@@ -42,21 +42,24 @@ public class LEDControls : MonoBehaviour {
 
 
             if (LED1ON)
+            {
+                LED1.GetComponent<Renderer>().material.SetColor("_Color", Color.red);
                 LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
+            }
             else
-                LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.3f, 0, 0));
+                LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
             if (LED2ON)
                 LED2.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
             else
-                LED2.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.3f, 0, 0));
+                LED2.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
             if (LED3ON)
                 LED3.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
             else
-                LED3.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.3f, 0, 0));
+                LED3.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
             if (LED4ON)
                 LED4.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
             else
-                LED4.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.3f, 0, 0));
+                LED4.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
 
         }
         else {
@@ -64,21 +67,24 @@ public class LEDControls : MonoBehaviour {
             if (isHighlighted)
                 return;
             if (LED1ON)
+            {
+                LED1.GetComponent<Renderer>().material.SetColor("_Color", Color.red);
                 LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
+            }
             else
-                LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.3f, 0, 0));
+                LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
             if (LED2ON)
                 LED2.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
             else
-                LED2.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.3f, 0, 0));
+                LED2.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
             if (LED3ON)
                 LED3.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
             else
-                LED3.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.3f, 0, 0));
+                LED3.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
             if (LED4ON)
                 LED4.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
             else
-                LED4.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.3f, 0, 0));
+                LED4.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
 
         }
 

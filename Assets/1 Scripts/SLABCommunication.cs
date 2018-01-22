@@ -105,6 +105,18 @@ public class SLABCommunication : MonoBehaviour
         
 
         Thread.Sleep(2000);
+        if (HRTFDir[0].Equals('.'))
+        {
+            HRTFDir= HRTFDir.TrimStart('.');
+            HRTFDir = HRTFDir.TrimStart('\\');
+            HRTFDir = Path.Combine(System.Environment.CurrentDirectory, HRTFDir);
+        }
+        if (wavDir[0].Equals('.'))
+        {
+            wavDir = wavDir.TrimStart('.');
+            wavDir = wavDir.TrimStart('\\');
+            wavDir = Path.Combine(System.Environment.CurrentDirectory, wavDir);
+        }
         if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
         {
             sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
@@ -120,6 +132,7 @@ public class SLABCommunication : MonoBehaviour
         }
         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
         {
+            
             sendMessageToSlab("hrtfPath " + HRTFDir + "");
             if (!outDevice.Equals(""))
             {
@@ -148,24 +161,24 @@ public class SLABCommunication : MonoBehaviour
             slabResponse = sendMessageToSlab("isRendering");
             if (slabResponse.Trim().Trim(';').Split(':')[1].Trim().Equals("0")) {
                 return;
-
-
             }
             sendMessageToSlab("Stop");
+            Thread.Sleep(1000);
             do
             {
                 slabResponse = sendMessageToSlab("isRendering");
                 Thread.Sleep(1000);
             }
             while (slabResponse.Trim().Trim(';').Split(':')[1].Trim().Equals("1"));
+
             sendMessageToSlab("Start");
             Thread.Sleep(500);
-
             sendMessageToSlab("hrtfPath " + HRTFDir + "");
             sendMessageToSlab("defAsioInChMap " + channelMap + "");
             sendMessageToSlab("wavePath " + wavDir + "");
             string slabDirectory = Path.Combine(spatialAudioServerDirectory, "slab3d");
-            UnityEngine.Debug.Log(sendMessageToSlab("slabRoot " + slabDirectory));
+
+            sendMessageToSlab("slabRoot " + slabDirectory);
             sendMessageToSlab("binPath bin");
             sendMessageToSlab("setFirTaps " + FIRTaps + "");
     }
@@ -519,7 +532,7 @@ public class SLABCommunication : MonoBehaviour
         if (ConfigurationUtil.waitingForResponse)
         {
 
-            string message = "waitForResponse," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",[";
+            string message = "waitForResponse," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",";
             Vector3 intersectionPoint = Vector3.zero;
             if (ConfigurationUtil.useRift) {
                 if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand)
@@ -553,7 +566,7 @@ public class SLABCommunication : MonoBehaviour
             message += spkID;
             message += ",";
             float respTime = Time.time - ConfigurationUtil.waitStartTime;
-            message += respTime + "]";
+            message += respTime + "";
 
             GetComponent<SocketCommunicationHandler>().sendMessage(message, ConfigurationUtil.waitingClient);
             ConfigurationUtil.waitingForResponse = false;

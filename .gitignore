@@ -39,3 +39,6 @@ Assets/LICENSE.txt
 AudioServer3.zip
 Assets/SteamVR/
 UnityPackageManager/manifest.json
+HRTFs/
+WaveFiles/
+Documentation/OpenVALEGuide.doc
