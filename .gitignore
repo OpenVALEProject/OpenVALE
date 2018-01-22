@@ -1,0 +1,11 @@
+Assets/TutorialInfo/
+Assets/VRSampleScenes/
+Assets/VRStandardAssets/
+*.meta
+*.asset
+Library/
+Temp/
+*.sln
+*.csproj
+Assets/Plugins/Android/Assets/OSIG_Readme.txt
+Assets/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs
