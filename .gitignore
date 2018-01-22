@@ -16,3 +16,7 @@ Assets/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs
 *.txt
 *.unity
 TestBuilds/
+/ClientSource/nbproject/private/
+/ClientSource/build/
+ClientSource/
+Assets/Standard Assets/Characters/FirstPersonCharacter/Scripts/MouseLook.cs

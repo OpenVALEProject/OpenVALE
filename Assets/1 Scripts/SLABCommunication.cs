@@ -12,8 +12,10 @@ public class SLABCommunication : MonoBehaviour
 {
 	public int port = 1112;
 	private TcpClient slabConnection;
-	private static NetworkStream slabStream;
-	private Process slabProcess;
+    private static UdpClient slabUDPConnection;
+    private static NetworkStream slabStream;
+    private static NetworkStream slabUDPStream;
+    private Process slabProcess;
 	public float soundDelay = 1.1f;
 	public float nextSound = 0.0f;
 	private bool mute = true;
@@ -36,7 +38,7 @@ public class SLABCommunication : MonoBehaviour
     public GameObject joystickCam;
     public GameObject occCam;
     private string spatialAudioServerDirectory = ConfigurationUtil.spatialAudioServer;
-
+    public bool isRendering = false;
 	//private string response;
 
 	// Use this for initialization
@@ -65,6 +67,7 @@ public class SLABCommunication : MonoBehaviour
             try
             {
                 slabConnection = new TcpClient("127.0.0.1", port);
+                slabUDPConnection = new UdpClient("127.0.0.1", 11000);
             }
             catch (System.Exception e) {
                 continue;
@@ -82,44 +85,25 @@ public class SLABCommunication : MonoBehaviour
 
 		slabStream = slabConnection.GetStream();
         
-		//Thread.Sleep(2000);
 
-		//string r;
-		sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
-		//sendMessageToSlab("loadHRTF(" + HRTFName + ")");
-		sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
-		sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
-        if (!outDevice.Equals(""))
-        {
-            UnityEngine.Debug.Log("ASIO");
-            sendMessageToSlab("selectOutDevice(" + outDevice + ")");
-        }
-		sendMessageToSlab("setWavePath(" + wavDir + ")");
-		sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
-
-	}
-    public void Reset() {
-        UnityEngine.Debug.Log("INSIDE RESET");
-
+        //Thread.Sleep(2000);
 
         //string r;
-        sendMessageToSlab("freeSources()");
-        WorldVariables.clearObjects();
+        //sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
+        //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
+        //sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
+        //sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
+        //if (!outDevice.Equals(""))
+        //{
+        //    UnityEngine.Debug.Log("ASIO");
+        //    sendMessageToSlab("selectOutDevice(" + outDevice + ")");
+        //}
+        //sendMessageToSlab("setWavePath(" + wavDir + ")");
+        //sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
 
-        Thread.Sleep(500);
-
-        sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
-        sendMessageToSlab("setWavePath(" + wavDir + ")");
-        sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
-
-        Thread.Sleep(2000);
-
-        sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
-        sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
-        sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
-        sendMessageToSlab("selectOutDevice(" + outDevice + ")");
-        sendMessageToSlab("setWavePath(" + wavDir + ")");
-        sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
+    }
+    public void Reset() {
+     
     }
 
 	// Update is called once per frame
@@ -132,6 +116,23 @@ public class SLABCommunication : MonoBehaviour
         {
             //UnityEngine.Debug.Log(joystickCam.transform.rotation);
             camera = joystickCam;
+            if (Input.GetKey(KeyCode.A)) {
+                camera.transform.Rotate(Vector3.up, -.1f);
+            }
+            else if (Input.GetKey(KeyCode.D))
+            {
+                camera.transform.Rotate(Vector3.up, .1f);
+            }
+            else if (Input.GetKey(KeyCode.W))
+            {
+                camera.transform.Rotate(Vector3.right, -.1f);
+
+            }
+            else if (Input.GetKey(KeyCode.S))
+            {
+                camera.transform.Rotate(Vector3.right, .1f);
+
+            }
 
         }
         else
@@ -174,7 +175,8 @@ public class SLABCommunication : MonoBehaviour
 
 		}
 		//soundSource = Random.
-		sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
+        if(isRendering)
+		    sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")",true);
 
 
 	}
@@ -318,8 +320,14 @@ public class SLABCommunication : MonoBehaviour
 
     }
 
-	public static string sendMessageToSlab(string message)
+    public static string sendMessageToSlab(string message, bool isUDP = false)
 	{
+        if (isUDP) {
+            byte[] messageBytes = Encoding.ASCII.GetBytes(message);
+            slabUDPConnection.Send(messageBytes, messageBytes.Length);
+            //UnityEngine.Debug.Log("we");
+            return "0";
+        }
 		string sendMessage = message + (char)3;
 		StreamWriter s = new StreamWriter(slabStream);
 		s.Write(sendMessage);
@@ -329,7 +337,9 @@ public class SLABCommunication : MonoBehaviour
 		StreamReader r = new StreamReader(slabStream);
         char[] buff = new char[256];
 		r.Read(buff,0,256);
+        
         response = new string(buff);
+        response = response.Replace(((char)0x00).ToString(), string.Empty);
 		return response;
 
 	}

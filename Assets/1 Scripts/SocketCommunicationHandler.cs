@@ -30,7 +30,7 @@ public class SocketCommunicationHandler : MonoBehaviour
 	private List<GameObject> disabledObjects = new List<GameObject>();
 	public GameObject cursor;
     public bool clientDisconnect = false;
-
+    private List<string> currentSourceList = new List<string>();
 
 
 	// Use this for initialization
@@ -176,18 +176,12 @@ public class SocketCommunicationHandler : MonoBehaviour
 				lock (messageListLock)
 				{
 					//Debug.Log(incomingMessage);
-                    
-					    clientMessages.Add(new MessageContainer(s, incomingMessage));
-
-
+        		    clientMessages.Add(new MessageContainer(s, incomingMessage));
 
 				}
-
-
+                
 			}
-
-
-
+            
 		}
         UnityEngine.Debug.Log("falling out of thread");
         clientDisconnect = true;
@@ -206,7 +200,7 @@ public class SocketCommunicationHandler : MonoBehaviour
 		//	Debug.Log(mess.Value);
 
 		//}
-
+        
 		if (match.Success)
 		{
 			if (ConfigurationUtil.isDebug)
@@ -234,30 +228,150 @@ public class SocketCommunicationHandler : MonoBehaviour
 			{
 
 				case "sethrtf":
-				case "loadhrtf":
-				case "addaudiosource":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    int sourceNumber;
+                    
+                    // If hrtf ID load hrtf for all sources
+                    if (int.TryParse(paramList[0], out sourceNumber))
+                    {   
+                        bool success = true;
+                        foreach (string s in currentSourceList)
+                        {
+                            reply = SLABCommunication.sendMessageToSlab("switchsrchrtf(" + s + "," + sourceNumber + ")");
+                            if (!reply.Trim().Split()[1].Equals("0")) {
+                                success = false;
+                            }
+                        }
+                        if (success)
+                        {
+                            reply = "setHRTF," + reply.Trim().Split()[2];
+                        }
+                        else
+                            reply = "setHRTF,0";
+                    }
+                    // else load the hrtf filename
+                    else {
+
+                        reply = SLABCommunication.sendMessageToSlab("loadHRTF(" + paramList[0] + ")");
+                        if (!reply.Trim().Split()[1].Equals("0"))
+                        {
+                            reply = "setHRTF," + reply.Trim().Split()[2];
+                        }
+                        else
+                            reply = "setHRTF,0";
+
+                    }
+
+                    break;
+
+                case "addaudiosource":
+                    
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    //allocwavesrc
+                    //Get position information in FLT
+                    x = paramList[1].Trim('[');
+                    y = paramList[2];
+                    z = paramList[3].Trim(']');
+                    // Allocate a wav source
+                    if (paramList[0].ToLower().Equals("wav")) {
+                        reply = SLABCommunication.sendMessageToSlab("allocWaveSrc(" + paramList[4] + ")");
+                        UnityEngine.Debug.Log(reply);
+                    }
+                    // Allocate Generator Source
+                    if (paramList[0].ToLower().Equals("noisegen"))
+                    {
+                        reply = SLABCommunication.sendMessageToSlab("allocSigGenSrc(N,1.0,0,0)");
+                        UnityEngine.Debug.Log(reply);
+                    }
+                    // Allocate ASIO Source
+                    if (paramList[0].ToLower().Equals("asio"))
+                    {
+                        reply = SLABCommunication.sendMessageToSlab("allocAsioSrc()");
+                    }
+                    string[] replySplit = reply.Trim().Split(',');
+                    // Check success 
+                    if (replySplit[1].Trim().Equals("0"))
+                    {
+                        reply = SLABCommunication.sendMessageToSlab("enableSrc(" + replySplit[2].Trim().Trim(';') + ",1)");
+                        SLABCommunication.sendMessageToSlab("updateSrcXYZ(" + replySplit[2].Trim().Trim(';') + "," + x + "," + y + "," + z + ")");
+                        reply = "addaudiosource," + replySplit[2].Trim().Trim(';');
+                    }
+                    else {
+                        reply = "addaudiosource,0";
+                    }
+                    break;
                 case "enablesrc":
+                    //enablesrc
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    //UnityEngine.Debug.Log(paramList[1].ToLower().Length);
+                        
+                    if (paramList[1].ToLower().Equals("t"))
+                        reply = SLABCommunication.sendMessageToSlab("enableSrc(" + paramList[0] + ",1)");
+                    else if (paramList[1].ToLower().Equals("f"))
+                        reply = SLABCommunication.sendMessageToSlab("enableSrc(" + paramList[0] + ",0)");
+                    else reply = "-1";
+                    reply = reply.Trim().Split(',')[0].Trim() +","+ reply.Trim().Split(',')[1].TrimStart();
+                    
+                    break;
                 case "startrendering":
+                    //start
+                    
+
+                    reply = SLABCommunication.sendMessageToSlab("start");
+                    
+                    UnityEngine.Debug.Log(":" +reply.Trim().Split(',')[1].Trim() + ":");
+                    File.WriteAllText(".\\logtext.txt", reply.Trim().Split(',')[1].Trim());
+                    if (reply.Trim().Split(',')[1].Trim().Equals("0;"))
+                    {
+                        gameObject.GetComponent<SLABCommunication>().isRendering = true;
+                        
+                    }
+                    reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
+                    /*
                     reply = SLABCommunication.sendMessageToSlab(mC.message);
                     foreach (string key in sourcesToInitOnRender.Keys)
                     {
                         Vector3 loc = sourcesToInitOnRender[key];
-                        SLABCommunication.sendMessageToSlab("presentSource(" + key + "," + loc.x + "," + loc.y + "," + loc.z + ")");
-                        SLABCommunication.sendMessageToSlab("setSourceGain(" + key + ", 0)");
+                        //SLABCommunication.sendMessageToSlab("presentSource(" + key + "," + loc.x + "," + loc.y + "," + loc.z + ")");
+                        //SLABCommunication.sendMessageToSlab("setSourceGain(" + key + ", 0)");
                         //SLABCommunication.sendMessageToSlab("muteSource(" + key + ",0)");
                     }
                     sourcesToInitOnRender.Clear();
+                    */
                     break;
                 case "endrendering":
+                    //stop
                 case "reset":
+                    //exit and restart
                     gameObject.GetComponent<SLABCommunication>().Reset();
                     reply = "1";
                     break;
                 case "definefront":
+                    UnityEngine.VR.InputTracking.Recenter();
+                    reply = "1";
+                    break;
                 case "adjustsourcelevel":
+                    //adjsrcgain
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    reply = SLABCommunication.sendMessageToSlab("adjsrcgain(" + paramList[0] + "," + paramList[1]+")");
+                    reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
+                    break;
                 case "adjustoveralllevel":
+                    //adjsrcgain for each current source
                 case "adjustsourceposition":
+                    //presentsrcxyz
                 case "muteaudiosource":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    UnityEngine.Debug.Log(paramList[1].ToLower().Length);
+
+                    if (paramList[1].ToLower().Equals("t"))
+                        reply = SLABCommunication.sendMessageToSlab("muteSrc(" + paramList[0] + ",1)");
+                    else if (paramList[1].ToLower().Equals("f"))
+                        reply = SLABCommunication.sendMessageToSlab("muteSrc(" + paramList[0] + ",0)");
+                    else
+                        reply = "-1";
+                    break;
+                //mutesrc
                 case "setleds":
                 case "showfreecursor":
                 case "showsnappedcursor":
@@ -549,10 +663,8 @@ public class SocketCommunicationHandler : MonoBehaviour
 					reply = "1";
 					break;
 
-				case "htBoresight":
-					UnityEngine.VR.InputTracking.Recenter();
-					reply = "1";
-					break;
+				
+					
 				case "getLocalizationResponse":
 					WorldVariables.waitingForLocalizationResponse = true;
 					WorldVariables.waitingClient = mC.sender;
@@ -689,7 +801,8 @@ public class SocketCommunicationHandler : MonoBehaviour
 			}
 			if (!reply.Equals(""))
 			{
-				if (ConfigurationUtil.isDebug)
+                reply = reply.Replace(";", string.Empty);
+                if (ConfigurationUtil.isDebug)
 					LogSystem.Log("Sent : " + reply);
 				NetworkStream n = new NetworkStream(mC.sender);
 				StreamWriter writer = new StreamWriter(n,ASCIIEncoding.ASCII);

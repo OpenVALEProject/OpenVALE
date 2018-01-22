@@ -14,7 +14,7 @@ public class ConfigurationUtil  {
 	public static string sigGenPath = "";
 	public static string FIRTaps = "256";
 	public static bool useRift = true;
-	public static bool isDebug = false;
+	public static bool isDebug = true;
 	public static string IODevice = "";
     public static bool isUseWand = true;
     public static bool isTestMode = false;

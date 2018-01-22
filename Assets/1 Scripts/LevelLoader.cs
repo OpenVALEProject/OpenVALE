@@ -49,6 +49,7 @@ public class LevelLoader : MonoBehaviour
 
 
         }
+        ConfigurationUtil.useRift = false;
         SceneManager.LoadScene(defaultLevel);
         /*
         foreach (string line in filedata)
