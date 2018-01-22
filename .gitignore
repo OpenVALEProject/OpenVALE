@@ -7,7 +7,6 @@ Library/
 Temp/
 *.sln
 *.csproj
-Assets/Plugins/Android/Assets/OSIG_Readme.txt
 Assets/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs
 *.fbx
 *.mat
@@ -23,7 +22,6 @@ Assets/Standard Assets/Characters/FirstPersonCharacter/Scripts/MouseLook.cs
 Assets/Plugins/Pixelplacement/
 Assets/OvrAvatar/
 Assets/OVR/Textures/GearVrController/GearVrController_normal_1024.tif
-Assets/OVR/
 Assets/OSPNative/
 Assets/OculusPlatform/
 Assets/4 Animations/FeedbackSpin.anim
@@ -42,3 +40,15 @@ UnityPackageManager/manifest.json
 HRTFs/
 WaveFiles/
 Documentation/OpenVALEGuide.doc
+*.psd
+Assets/Standard Assets/ParticleSystems/
+Assets/Standard Assets/Utility/
+Assets/SampleScenes/
+Assets/Standard Assets/Editor/
+*.odt
+Assets/OVRHarness/
+Assets/OVRInspector/LICENSE.txt
+Assets/OVRInspector/
+*.dll
+Assets/Parse/
+*.unitypackage

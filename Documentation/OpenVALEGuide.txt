@@ -1,0 +1,213 @@
+OpenVALE Documentation
+
+Table of Contents
+
+1. User Guide
+2. Configuration Settings
+3. Command List
+4. Error Codes
+
+User Guide
+
+	Contents of the OpenVALE folder:
+i. OpenVALE.exe
+- OpenVALE executable
+ii. OpenVALE_Data
+- Folder containing the runtime files for OpenVALE, must be in the same folder as OpenVALE.exe
+iii. UnityPlayer.dll
+- Runtime library for the Unity Player, must be in the same folder as OpenVALE.exe
+iv. OpenVALEConfig.xml
+- Contains configuration settings for OpenVALE
+v. DemoServer
+- Contains AudioServer3 with settings for running with OpenVALE.
+
+	When you first open OpenVALE.exe you should see : 
+
+	
+	To test whether OpenVALE is working, run the demo script included (Matlab and Python 			formats).
+
+	All coordinate values for position should be passed and returned as Front,Left,Top (FLT).  			Positive forward,left,up.
+
+
+Configuration Settings
+
+	Filename:
+		OpenVALEConfig.xml
+
+	Format example:
+		<setting name="SpatialAudioServerRootDir" serializeAs="string">
+			<value>./DemoServer</value>
+		</setting>
+		
+	List of values:
+		SpatialAudioServerRootDir  
+			- Only supports absolute path or relative subfolders
+
+		SpatialAudioEngineType
+			- Possible values "AudioServer3" or "SlabServer"
+
+		HRTFDirectory
+			- Absolute path to folder containing HRTFs
+	
+		WavPath
+			- Absolute path to folder containing .wav files
+
+		ASIOInputChannels
+			- Comma seperated list of integers.
+			- Zero based
+			- Example : 0,1,2,3
+
+		LevelName
+			- Name of a level built in the OpenVALE 
+			- If blank will use Virtual ALF
+
+		HMDType 
+			- Possible values "Rift", “Vive”, or "None"
+If blank will default to Rift
+
+Command List
+
+	All commands that the return format of commandname,status code,return values. (ie 				AddAudioSource will return AddAudioSource,0,1)
+	
+Pre-render
+
+	hrtfID = loadHRTF(filename)
+		- Loads an HRTF file
+		- if successful will return the OpenVALE ID for the HRTF which can be used for future 				calls
+		- Example 1: loadHRTF(KEMAR.slh)
+	
+	srcID = addAudioSource(Type, initialPosition, HRTFid, extraParams)
+		- Initializes source in the sound engine and returns the OpenVALE reference for the 				source
+		- Current supported values for Type are: wav, noiseGen, ASIO
+		- InitialPosition is of format [f,l,t]
+		- extraParams for wav source filename=wavname.wav
+		- extraParams for asio source number of channels integer
+		- Example 1: addAudioSource(wav,[2,0,1],0,filename=wavname.wav)
+		- Example 2: addAudioSource(noiseGen,[3,1,3],0)
+		- Example 3: addAudioSource(asio,[3,1,3],0,6)
+
+	err = startRendering
+		- Sets the sound engine to render mode
+		- All unmuted and enabled source begin play
+		- Example startRendering()
+
+	err = defineFront 
+		- define the origin of position and azimuth based on the HMDs current orientation and 				position
+	
+	err = getSubjectNumber
+		- displays a number panel for entering subject numbers.
+- Subject number entered must be 4 digits
+- Client expected to choose input method (ie Crosshair)
+- Example: getSubjectNumber()
+
+During Render Commands
+
+	err = enableSrc(srcID,T/F)
+		- Enable or disable a source based on the boolean passed
+		- Example enableSrc(1,T)
+
+	err = setHRTF(sourceNumber,HRTFid)
+		- Assign an HRTF to the source
+		- Example setHRTF(0,0)
+
+	err = adjustSourceLevel(srcID,relativeLevel)
+		- Adjust the relative level of an audio source
+		- srcID is the OpenVALE audio source ID
+		- relative level is in dB
+		- Example adjustSourceLevel(1,5)
+	
+	err =adjustOverallLevel(relativeLevel)
+		- Adjust the relative level of all sources
+		- relative level is in dB
+		- Example adjustOverallLevel(5)
+	
+	err =adjustSourcePosition(srcID, Position = [x,y,z] or SpkID)
+		- Moves a source to a new position
+		- srcID is the OpenVALE audio source ID
+		- Position of the format [f,l,t]
+		- spkID is the ID of the speaker in ALF
+		- Example 1: adjustSourcePosition(1,[1,2,3])
+		- Example 2: adjustSourcePosition(1,274)
+	
+	err =muteAudioSource(srcID,T/F)
+		- Mutes an audio source 
+		- Example muteAudioSource(1,T)
+	
+	err = setLEDs(Position = [x,y,z] or SpkID, LEDMask = [1,0,0,1])
+		- Set LEDs on/off based on nearest speaker to position or speaker ID
+		- For LEDMask 1 = turn LED on, 0 = turn LED off
+		- Example setLEDs([f,l,t],[1,0,1,0])
+		- Example setLEDs(1,[1,0,1,0])
+	
+	err = showFreeCursor(whichCursor = {‘head’,’hand’}, T/F)
+		- Shows the cursor attached to chosen object
+		- Example showFreeCursor(head,T)
+	
+	err = showSnappedCursor(whichCursor = {‘head’,’hand’}, T/F)
+		- Turns on the LEDs of the speaker the user is pointing toward
+- Example showSnappedCursor(head,T)
+
+	err = reset()
+		- Stops rendering
+		- Removes all sources and HRTFs
+- Example reset()
+
+	err = displayMessage(String)
+- Displays a message to the user
+- Example displayMesage(“Hello”)
+Runtime Queries
+	
+	spkID, respTime = waitForResponse()	
+		- Waits for the user to press the trigger on the right hand controller 
+		- Returns nearest speaker ID to the currently active cursor
+		- if no cursor is active, returns the nearest speaker to free cursor attached to the head
+	
+	err =waitForReCenter(spkID or position,tolerance)
+		- Waits for the user to face a specified position or speaker
+		- Tolerance is in radians
+		- Example 1 : waitForReCenter(1,.1)
+		- Example 2 : waitForReCenter([1,2,3], .1)
+	
+	[orientation] = getHeadOrientation()
+		- returns the heads current orientation in Yaw Pitch Roll Radians
+	
+	[position],[orientation] = getHead6DOF()
+		- returns the position in FLT meters
+		- returns orientation in YPR Radians
+	
+	spkID,errorDistance = getNearestSpeaker(position) 
+		- Returns the nearest speaker to the given position
+		- error distance in is meters
+		- Example : getNearestSpeaker([1,2,3])
+
+	[position] = getSpeakerPosition(spkID) 
+		- Returns the FLT position of the speaker ID
+		- Example : getSpeakerPosition(1)
+
+	err = highlightlocation(spkID or position,color)
+		- Shows a highlighted location with a specified color
+		- Color format [r,g,b] where r g b are between 0,1
+		- Calling highlightLocation() will hide the highlight
+		- Example : highlightlocation(274,[1,.5,1])
+		- Example : highlightlocation([2,1.7,4],[1,.5,1])
+
+
+Error Codes
+
+        0 = No Error 		
+        1 = Command Syntax,		
+        2 = Command not recognize
+        3 = Failed to parse XYZ values
+        4 = Failed to parse mask
+        5 = Failed to parse boolean
+        6 = Parameter out of range
+        7 = Speaker number not found
+        8 = Failed to parse color value
+        9 = Failed to load HRTF
+        10 = AudioServer3 error
+        11 = Source ID must be an integer
+        12 = HRTF ID muse be an integer
+        13 = Failed to parse AudioServer3 response
+        14 = Failed to initialize location
+        15 = Failed to start render
+

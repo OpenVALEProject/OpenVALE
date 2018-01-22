@@ -34,7 +34,8 @@ public class SocketCommunicationHandler : MonoBehaviour
     public GameObject Highlighter;
     private ConfigurationUtil.AudioEngineType currentEngine;
     public UIRotator UIDisplay;
-
+    public GameObject SubjectNumberCanvas;
+    private int numHRTFs = 0;
 	// Use this for initialization
 	void Awake()
 	{
@@ -206,10 +207,15 @@ public class SocketCommunicationHandler : MonoBehaviour
                         paramList = match.Groups[2].Value.Trim().Split(',');
                         reply = SLABCommunication.sendMessageToSlab("loadHRTFs " + paramList[0]);
                         replyCheck = reply.Trim().Trim(';').Split(',');
+                        UnityEngine.Debug.Log("LoadHRTF," + reply);
                         if (int.TryParse(replyCheck[1], out replyCode))
                         {
-                            if (replyCode >= 0)
-                                reply = "loadHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE+ "," + replyCode;
+                            if (replyCode == 0)
+                            {
+
+                                reply = "loadHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + numHRTFs;
+                                numHRTFs++;
+                            }
                             else
                                 reply = "loadHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
 
@@ -227,6 +233,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     reply = "startaudioengine,0";
                     
                     break;
+                
                 case "rewindsource":
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     int srcIDToPresent;
@@ -658,6 +665,17 @@ public class SocketCommunicationHandler : MonoBehaviour
                         }
                         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
                             reply = SLABCommunication.sendMessageToSlab("enableSource(" + paramList[0] + ",1)");
+                        replyCheck = reply.Trim().Trim(';').Split(',');
+                        if (int.TryParse(replyCheck[1], out replyCode)) {
+                            if (replyCode == 0)
+                            {
+                                reply = "enableSrc," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                            }
+                            else {
+                                reply = "enableSrc," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
+                            }
+                        }
+                        
                     }
                     else if (paramList[1].ToLower().Equals("f"))
                     {
@@ -669,7 +687,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                             reply = SLABCommunication.sendMessageToSlab("enableSource(" + paramList[0] + ",0)");
                     }
                     else reply = "-1";
-                    reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
+                    //reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
 
                     break;
                 case "startrendering":
@@ -745,6 +763,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                 case "reset":
                     //exit and restart
                     gameObject.GetComponent<SLABCommunication>().Reset();
+                    numHRTFs = 0;
                     reply = "reset,0";
                     break;
                 case "definefront":
@@ -765,7 +784,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
                         reply = SLABCommunication.sendMessageToSlab("setSourceGain(" + paramList[0] + "," + paramList[1] + ")");
                     else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3) {
-                        reply = SLABCommunication.sendMessageToSlab("setSrcGain" + paramList[0] + "," + paramList[1] + "");
+                        reply = SLABCommunication.sendMessageToSlab("setSrcGain " + paramList[0] + "," + paramList[1] + "");
                         reply = reply.Trim().Trim(';');
                     }
                     reply = "adjustSourceLevel," + reply.Trim().Split(',')[1].TrimStart();
@@ -905,10 +924,13 @@ public class SocketCommunicationHandler : MonoBehaviour
                     break;
                 case "showfreecursor":
                     paramList = match.Groups[2].Value.Trim().Split(',');
+                    GetComponent<SLABCommunication>().TurnOffSnappedCursor();
+                    GetComponent<SLABCommunication>().TurnOffCursor();
                     if (paramList[0].ToLower().Equals("head"))
                     {
                         if (paramList[1].ToLower().Equals("t"))
                         {
+                            GetComponent<SLABCommunication>().TurnOnCursor();
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.crosshair;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hmd;
 
@@ -916,7 +938,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         else if (paramList[1].ToLower().Equals("f"))
                         {
 
-                            GetComponent<SLABCommunication>().TurnOffCursor();
+                            
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hmd;
 
@@ -930,6 +952,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     {
                         if (paramList[1].ToLower().Equals("t"))
                         {
+                            GetComponent<SLABCommunication>().TurnOnCursor();
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.crosshair;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hand;
 
@@ -937,7 +960,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         else if (paramList[1].ToLower().Equals("f"))
                         {
 
-                            GetComponent<SLABCommunication>().TurnOffCursor();
+                          
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hand;
 
@@ -956,6 +979,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     break;
                 case "showsnappedcursor":
                     paramList = match.Groups[2].Value.Trim().Split(',');
+                    GetComponent<SLABCommunication>().TurnOffCursor();
                     if (paramList[0].ToLower().Equals("head"))
                     {
                         if (paramList[1].ToLower().Equals("t"))
@@ -967,7 +991,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         else if (paramList[1].ToLower().Equals("f"))
                         {
 
-                            GetComponent<SLABCommunication>().TurnOffCursor();
+                            GetComponent<SLABCommunication>().TurnOffSnappedCursor();
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hmd;
 
@@ -1010,6 +1034,12 @@ public class SocketCommunicationHandler : MonoBehaviour
                     ConfigurationUtil.waitingForResponse = true;
                     ConfigurationUtil.waitingClient = mC.sender;
                     ConfigurationUtil.waitStartTime = Time.time;
+                    reply = "";
+                    break;
+                case "getsubjectnumber":
+                    SubjectNumberCanvas.SetActive(true);
+                    ConfigurationUtil.waitingForSubjectNum = true;
+                    ConfigurationUtil.waitingClient = mC.sender;
                     reply = "";
                     break;
                 case "waitforrecenter":

@@ -44,10 +44,12 @@ public class SLABCommunication : MonoBehaviour
     private GameObject currentHighlightedObject = null;
     public GameObject crossHair;
     public float crossHairDepth;
+    public float viveCrossHairDepth;
     public GameObject panelBase;
     public static Dictionary<int, SourceInformation> currentSources = new Dictionary<int, SourceInformation>();
     private bool enteredTolerance = false;
     private float toleranceTime = 0.0f;
+    public Transform VIVEOffset;
 
 	// Use this for initialization
 	void Start()
@@ -261,9 +263,9 @@ public class SLABCommunication : MonoBehaviour
         float roll;
         camera = joystickCam;
 
-        if (!ConfigurationUtil.useRift)
+        if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive)
         {
-            
+
 
             if (Input.GetKey(KeyCode.A))
             {
@@ -285,7 +287,7 @@ public class SLABCommunication : MonoBehaviour
             }
 
             //GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
-            
+
             roll = camera.transform.rotation.eulerAngles.z;
             while (roll > 180)
             {
@@ -327,7 +329,7 @@ public class SLABCommunication : MonoBehaviour
         else
         {
             Vector3 orientationVector = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.Head).eulerAngles;
-           
+
             roll = orientationVector.z;
             while (roll > 180)
             {
@@ -361,27 +363,29 @@ public class SLABCommunication : MonoBehaviour
                 yaw = yaw + 360;
 
             }
-        }
-        Vector3 cameraPosition = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.Head);
-        if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
-        {
-            sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
 
-            Vector3 relativePosition = Vector3.zero;
-            foreach (SourceInformation S in currentSources.Values)
+            Vector3 cameraPosition = VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.Head);
+            if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
             {
-                relativePosition = S.FLTPosition - HelperFunctions.UnityXYZToFLT(cameraPosition);
-                sendMessageToSlab("updateSource(" + S.sourceID + "," + relativePosition.x + "," + relativePosition.y + "," + relativePosition.z);
-            }
-        }
-        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3) { 
-            Vector3 FLTCameraPosition = HelperFunctions.UnityXYZToFLT(cameraPosition);
-            sendMessageToSlab("updateLst6DOF " + FLTCameraPosition.x + "," + -FLTCameraPosition.y + "," + FLTCameraPosition.z + "," + yaw + ", " + -pitch + ", " + -roll);
-        }
-        if (currentHighlightedObject != null)
-        {
-            currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(false, false, false, false);
+                sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
 
+                Vector3 relativePosition = Vector3.zero;
+                foreach (SourceInformation S in currentSources.Values)
+                {
+                    relativePosition = S.FLTPosition - HelperFunctions.UnityXYZToFLT(cameraPosition);
+                    sendMessageToSlab("updateSource(" + S.sourceID + "," + relativePosition.x + "," + relativePosition.y + "," + relativePosition.z);
+                }
+            }
+            else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+            {
+                Vector3 FLTCameraPosition = HelperFunctions.UnityXYZToFLT(cameraPosition);
+                sendMessageToSlab("updateLst6DOF " + FLTCameraPosition.x + "," + -FLTCameraPosition.y + "," + FLTCameraPosition.z + "," + yaw + ", " + -pitch + ", " + -roll);
+            }
+            if (currentHighlightedObject != null)
+            {
+                currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(false, false, false, false);
+
+            }
         }
 
         if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand) {
@@ -400,13 +404,14 @@ public class SLABCommunication : MonoBehaviour
                 if (ConfigurationUtil.useRift)
                 {
                     crossHair.transform.position = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
-                    crossHair.transform.position = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth;
+                    crossHair.transform.position = crossHair.transform.position + ((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized) * crossHairDepth;
                     
                 }
                 else if (ConfigurationUtil.useVive)
                 {
-                    crossHair.transform.position = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
-                    crossHair.transform.position = crossHair.transform.position + ((SteamVR_Controller.Input(3).transform.rot * Vector3.forward).normalized * crossHairDepth);
+                    crossHair.transform.position = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye) + VIVEOffset.position;
+                    crossHair.transform.position = crossHair.transform.position + ((SteamVR_Controller.Input(3).transform.rot * Vector3.forward).normalized * viveCrossHairDepth);
+                    //UnityEngine.Debug.Log("Crosshair transform : " + crossHair.transform.position);
                 }
                 crossHair.transform.LookAt(crossHair.transform.position + (UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward), UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.up);
                 crossHair.transform.Rotate(Vector3.right, -90);
@@ -529,12 +534,66 @@ public class SLABCommunication : MonoBehaviour
 	}
     private void TriggerPressed() {
 
+        if (ConfigurationUtil.waitingForSubjectNum) {
+            Vector3 origin = Vector3.zero;
+            Vector3 toDirection = Vector3.zero;
+            if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive && Input.GetKeyDown(KeyCode.Space)) {
+                origin = Vector3.zero;
+                toDirection = Camera.main.transform.forward;
+                
+            }
+            else if (ConfigurationUtil.useRift || ConfigurationUtil.useVive)
+            {
+                if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand)
+                {
+                    if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.crosshair)
+                    {
+                        if (ConfigurationUtil.useRift)
+                        {
+                            origin = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                            toDirection = (crossHair.transform.position - UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye)).normalized * 2.08f;
+                        }
+                        else if (ConfigurationUtil.useVive)
+                        {
+                            origin = VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                            toDirection = (crossHair.transform.position - (VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye))).normalized * 2.08f;
+                          
+
+                        }
+                    }
+                }
+                else if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hmd)
+                {
+                    if (ConfigurationUtil.currentCursorType != ConfigurationUtil.CursorType.crosshair)
+                    {
+                        origin = VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                        toDirection = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward;
+                    }
+                    else
+                    {
+                        origin = VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                        toDirection = (crossHair.transform.position - (VIVEOffset.position + UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye))).normalized;
+                    }
+                }
+            }
+            Ray r = new Ray(origin, toDirection);
+            RaycastHit[] hits = Physics.RaycastAll(r, 50);
+            UnityEngine.UI.Button possibleButton;
+            foreach (RaycastHit RCH in hits)
+            {
+                possibleButton = RCH.collider.gameObject.GetComponent<UnityEngine.UI.Button>();
+                if (possibleButton != null)
+                {
+                    possibleButton.onClick.Invoke();
+                }
+            }
+        }
         if (ConfigurationUtil.waitingForResponse)
         {
 
             string message = "waitForResponse," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",";
             Vector3 intersectionPoint = Vector3.zero;
-            if (ConfigurationUtil.useRift) {
+            if (ConfigurationUtil.useRift || ConfigurationUtil.useVive) {
                 if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand)
                 {
                     if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
@@ -706,11 +765,18 @@ public class SLABCommunication : MonoBehaviour
 	{
 		yield return new WaitForSeconds(sec);
 	}
+    public void TurnOnCursor()
+    {
+        crossHair.SetActive(true);
+    }
     public void TurnOffCursor() {
         crossHair.SetActive(false);
     }
     public void TurnOffSnappedCursor() {
+        if (currentHighlightedObject == null)
+            return;
         currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(false, false, false, false);
         currentHighlightedObject = null;
     }
+    
 }

@@ -17,10 +17,10 @@
 			<value></value>
 		</setting>
 	<setting name="LevelName" serializeAs="string">
-				<value>GuessWho</value>
+				<value></value>
 			</setting>
 	<setting name="HMDType" serializeAs="string">
-			<value>None</value>
+			<value>Vive</value>
 		</setting>
   
   

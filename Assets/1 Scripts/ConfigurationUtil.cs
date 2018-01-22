@@ -31,6 +31,7 @@ public static class ConfigurationUtil  {
     public static Socket waitingClient = null;
     public static float waitStartTime = 0.0f;
     public static bool waitingForRecenter = false;
+    public static bool waitingForSubjectNum = false;
     public static Vector3 recenterPosition = Vector3.zero;
     public static float recenterTolerance = 0;
     public static AudioEngineType engineType = AudioEngineType.SLABServer;
