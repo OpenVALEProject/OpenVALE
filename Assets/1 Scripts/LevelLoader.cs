@@ -48,6 +48,7 @@ public class LevelLoader : MonoBehaviour
                         break;
                     case ("HRTFDirectory"):
                         ConfigurationUtil.HRTFDir = t.Trim().Replace('/', '\\');
+                        Debug.Log(ConfigurationUtil.HRTFDir);
                         rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
                         break;
                     case ("WavDirectory"):
@@ -60,9 +61,17 @@ public class LevelLoader : MonoBehaviour
                         break;
                     case ("LevelName"):
                         string levelNameCheck = t.Trim().Replace('/', '\\');
-                        Debug.Log("levelNameCheck " + levelNameCheck);
+                        
                         if (!levelNameCheck.Equals(""))
                             defaultLevel= levelNameCheck;
+                        rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        break;
+                    case ("HMDType"):
+                        string hmdTypeCheck = t.Trim().Replace('/', '\\');
+
+                        if (!hmdTypeCheck.Equals("None"))
+                            ConfigurationUtil.useRift = true;
+
                         rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
                         break;
                 }
@@ -74,11 +83,8 @@ public class LevelLoader : MonoBehaviour
             else
                 status = false;
             status = nn.MoveToNext();
-
-
         }
-        ConfigurationUtil.useRift = false;
-        Debug.Log(defaultLevel);
+        
         SceneManager.LoadScene(defaultLevel);
         /*
         foreach (string line in filedata)

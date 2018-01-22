@@ -11,17 +11,20 @@
 			<value>1,2</value>
 		</setting>
 	<setting name="HRTFDirectory" serializeAs="string">
-			<value>../../VirtualAudio/WaveFiles</value>
+			<value>../../VirtualAudio/HRTFs</value>
 		</setting>
 	<setting name="WavDirectory" serializeAs="string">
-			<value>../../VirtualAudio/HRTFs</value>
+			<value>../../VirtualAudio/Waves</value>
 		</setting>
 	<setting name="OutDeviceParams" serializeAs="string">
 			<value></value>
 		</setting>
 	<setting name="LevelName" serializeAs="string">
-				<value>GuessWho</value>
+				<value></value>
 			</setting>
+	<setting name="HMDType" serializeAs="string">
+			<value>Rift</value>
+		</setting>
   
   
   </applicationSettings>

@@ -87,7 +87,7 @@ public class GuessWho : MonoBehaviour
     }
     void triggerPressed()
     {
-        shakeTest.GetComponent<ResponseOrb>().Shake();
+        //shakeTest.GetComponent<ResponseOrb>().Shake();
         if (isWaitingForResponse)
         {
             bool returnHitInformation = false;

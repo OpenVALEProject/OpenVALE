@@ -108,10 +108,11 @@ public class SocketCommunicationHandler : MonoBehaviour
 			Thread t = new Thread(() => ReadClientSocket(tempSock));
 			clientThreads.Add(t);
 			t.Start();
-            
 
-
-		}
+            Thread tConnectMonitor = new Thread(() => DisconnectMonitor(tempSock));
+            clientThreads.Add(tConnectMonitor);
+            tConnectMonitor.Start();
+        }
 
 
 
@@ -164,10 +165,10 @@ public class SocketCommunicationHandler : MonoBehaviour
            
 			while (s.Connected)
 			{
-				UnityEngine.Debug.Log("Waiting for message");
+				//UnityEngine.Debug.Log("Waiting for message");
 				//UnityEngine.Debug.Log(incomingMessage);
 				string incomingMessage = reader.ReadLine();
-				UnityEngine.Debug.Log(incomingMessage);
+				
                 if (incomingMessage == null)
                     break;
 				lock (messageListLock)
@@ -180,14 +181,34 @@ public class SocketCommunicationHandler : MonoBehaviour
 			}
             
 		}
-        UnityEngine.Debug.Log("falling out of thread");
-        clientDisconnect = true;
+        //UnityEngine.Debug.Log("falling out of thread");
+        //clientDisconnect = true;
         //gameObject.GetComponent<SLABCommunication>().Reset();
 
 
 
 	}
-	private void ProcessMessage(MessageContainer mC)
+    private void DisconnectMonitor(Socket s)
+    {
+        //NetworkStream n = new NetworkStream(s);
+        //MessageContainer mC;//= new MessageContainer();
+
+
+       
+        while (s.Connected)
+        {
+            Thread.Sleep(300);
+        }
+
+       
+        //UnityEngine.Debug.Log("falling out of thread");
+        clientDisconnect = true;
+        //gameObject.GetComponent<SLABCommunication>().Reset();
+
+
+
+    }
+    private void ProcessMessage(MessageContainer mC)
 	{
 		///Debug.Log(mC.message);
         
@@ -600,6 +621,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         positionValue = sourcesToInitOnRender[s];
                         SLABCommunication.sendMessageToSlab("presentSource(" + s + "," + positionValue.x+"," + positionValue.y + "," + positionValue.z + ")");
                     }
+                    sourcesToInitOnRender.Clear();
                     //SLABCommunication.sendMessageToSlab("muteSource(1,0)");
                     //File.WriteAllText(".\\logtext.txt", reply.Trim().Split(',')[1].Trim());
 
@@ -629,20 +651,19 @@ public class SocketCommunicationHandler : MonoBehaviour
                 case "adjustsourcelevel":
                     //adjsrcgain
                     paramList = match.Groups[2].Value.Trim().Split(',');
-                    reply = SLABCommunication.sendMessageToSlab("adjsrcgain " + paramList[0] + "," + paramList[1] + " ");
-                    reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
+                    reply = SLABCommunication.sendMessageToSlab("adjustSourceGain(" + paramList[0] + "," + paramList[1] + ")");
+                    reply = "adjustSourceLevel," + reply.Trim().Split(',')[1].TrimStart();
                     break;
                 case "adjustoveralllevel":
-                //adjsrcgain for each current source
-                case "adjustsourceposition":
-                    //presentsrcxyz
                     paramList = match.Groups[2].Value.Trim().Split(',');
-                    x = paramList[1].Trim('[');
-                    y = paramList[2];
-                    z = paramList[3].Trim(']');
-                    reply = SLABCommunication.sendMessageToSlab("presentSrcXYZ " + paramList[0].Trim().Trim(';') + "," + x + "," + y + "," + z + "");
-                    reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
+                    //adjsrcgain for each current source
+                    foreach (SourceInformation si in GetComponent<SLABCommunication>().currentSources.Values) {
+                        reply = SLABCommunication.sendMessageToSlab("adjustSourceGain(" + si.sourceID + "," + paramList[0] + "");
+
+                    }
+                    reply = "adjustoveralllevel,0";
                     break;
+                    
                 case "muteaudiosource":
                     paramList = match.Groups[2].Value.Trim().Split(',');
 
@@ -922,7 +943,33 @@ public class SocketCommunicationHandler : MonoBehaviour
                     
                     break;
                 case "getheadorientation":
+                    
+                    Vector3 orientationHead = Vector3.zero;
+                    if (ConfigurationUtil.useRift)
+                    {
+                        orientationHead = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye).eulerAngles;
+                    }
+                    else {
+                        orientationHead = Camera.main.transform.rotation.eulerAngles;
+                    }
+                    reply = "getHeadOrientation,0," + "[" + orientationHead.x + "," + orientationHead.y + "," + orientationHead.z + "]";
+                    break;
                 case "gethead6dof":
+                    Vector3 position6DOF = Vector3.zero;
+                    Vector3 orientation6DOF = Vector3.zero;
+                    if (ConfigurationUtil.useRift) {
+                        position6DOF = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye);
+                        orientation6DOF = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye).eulerAngles;
+                    }
+                    else
+                    {
+                        position6DOF = Camera.main.transform.position;
+                        orientation6DOF = Camera.main.transform.rotation.eulerAngles;
+                    }
+                    if (position6DOF != null)
+                    position6DOF = HelperFunctions.UnityXYZToFLT(position6DOF);
+                    reply = "getHead6DOF,0," + "[" + position6DOF.x + "," + position6DOF.y + "," + position6DOF.z + "]," + "[" + orientation6DOF.x + "," + orientation6DOF.y + "," + orientation6DOF.z + "]";
+                    break;
                 case "getnearestspeaker":
                     paramList = match.Groups[2].Value.Trim().Split(',');
 
@@ -960,6 +1007,103 @@ public class SocketCommunicationHandler : MonoBehaviour
                         break;
                     }
                     reply = "getSpeakerPosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SPEAKERNOTFOUND;
+                    break;
+                case "adjustsourceposition":
+                    //adjustSourcePosition(src, pos)
+                    
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    Vector3 newSourcePosition = Vector3.zero;
+                    if (paramList[1].Contains("["))
+                    {
+                        x = paramList[1].Trim('[');
+                        y = paramList[2];
+                        z = paramList[3].Trim(']');
+                        xF = 0;
+                        yF = 0;
+                        zF = 0;
+                        if (!float.TryParse(x, out xF))
+                        {
+                            reply = "adjustSourcePosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                            UnityEngine.Debug.Log("Failed adjustSourcePosition : ");
+                            break;
+                        }
+                        if (!float.TryParse(y, out yF))
+                        {
+                            reply = "adjustSourcePosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                            UnityEngine.Debug.Log("Failed adjustSourcePosition : ");
+                            break;
+                        }
+                        if (!float.TryParse(z, out zF))
+                        {
+                            reply = "adjustSourcePosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                            UnityEngine.Debug.Log("Failed adjustSourcePosition : ");
+                            break;
+                        }
+                        newSourcePosition = new Vector3(xF, yF, zF);
+                      
+                    }
+                    else if (int.TryParse(paramList[1], out speakerID))
+                    {
+
+                        newSourcePosition = GetComponent<ALFLeds>().getSpeakerByID(paramList[0]).transform.position;
+                        newSourcePosition = HelperFunctions.UnityXYZToFLT(newSourcePosition);
+                        
+                    }
+                    
+                    else
+                    {
+                        reply = "adjustSourcePosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_CMDSYN;
+                        break;
+                    }
+                    int adjustSourceID = 0;
+                    if (int.TryParse(paramList[0], out adjustSourceID))
+                    {
+
+                        GetComponent<SLABCommunication>().UpdateSourcePosition(adjustSourceID, newSourcePosition);
+                        
+                    }
+                    else
+                    {
+                        reply = "adjustSourcePosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SRCIDMUSTBEINTEGER;
+                        break;
+                    }
+                    //pos = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
+
+                    //slabX = pos.z;
+                    //slabY = -pos.x;
+                    //slabZ = pos.y;
+
+
+                    message = "updateSource(" + paramList[0].Trim() +
+                        "," + newSourcePosition.x+ "," + newSourcePosition.y+ "," + newSourcePosition.z+ ")";
+                    //UnityEngine.Debug.Log(message);
+                    //pos = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
+                    //soundObject = WorldVariables.GetSLABObbject(paramList[0].Trim());
+                    //soundObject.transform.localPosition = pos;
+
+                    string adjustSourceReply = SLABCommunication.sendMessageToSlab(message);
+                    replyCheck = adjustSourceReply.Split(',');
+                    //UnityEngine.Debug.Log(adjustSourceReply);
+                    reply = "adjustSourcePosition,";
+                    if (int.TryParse(replyCheck[1], out replyCode))
+                    {
+                        if (replyCode == 0)
+                        {
+                            reply += ("," + replyCode);
+
+                        }
+                        else
+                        {
+                            reply = "adjustSourcePosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        reply = "adjustSourcePosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
+                        break;
+                    }
+
                     break;
                 case "getcurrenthrtf":
                 case "highlightlocation":
@@ -1048,175 +1192,12 @@ public class SocketCommunicationHandler : MonoBehaviour
                     {
                         UIDisplay.hideMessage();
                     }
+                    reply = "displayMessage,0";
                     break;
-                case"useWand":
-                    paramList = match.Groups[2].Value.Trim().Split(',');
-                    if (paramList[0].ToUpper().Equals("T"))
-					{
-                        ConfigurationUtil.isUseWand = true;
-					}
-					else
-					{
-                        ConfigurationUtil.isUseWand = false;
-
-					}
-                    reply = "1";
-                    break;
-
-                case "hideCursor":
-                    paramList = match.Groups[2].Value.Trim().Split(',');
-                    UnityEngine.Debug.Log("Hiding the cursor");
-                    GameObject cursorObject = GameObject.FindGameObjectWithTag("Cursor");
-                    
-                    
-                    
-                    //MeshRenderer cursorRenderer = cursorObject.GetComponent<MeshRenderer>();
-                    //cursorRenderer.material.SetColor(0, new Color(cursorRenderer.material.color.r, cursorRenderer.material.color.g,cursorRenderer.material.color.b, 0.0f));
-                    reply = "1";
-                    break;
+             
 				
 
-				case "addASIOSource":
-					// addASIOSource (nhtf,channel, location, visible) 
-					paramList = match.Groups[2].Value.Trim().Split(',');
-					message = "allocateASIOSource(" + paramList[0].Trim() +
-						"," + paramList[1].Trim() +
-						")";
-					x = paramList[2].Trim('[');
-					y = paramList[3];
-					z = paramList[4].Trim(']');
-					visible = paramList[5];
-					pos = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
-
-
-					soundObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-					soundObject.transform.Translate(pos);
-					soundObject.transform.localScale *= .1f;
-					re = soundObject.GetComponent<Renderer>();
-					mats = re.materials;
-					mats[0] = defaultMat;
-					re.materials = mats;
-					soundObject.tag = "SoundSource";
-					if (!visible.ToUpper().Equals("T"))
-					{
-
-						soundObject.SetActive(false);
-						
-
-					}
-					
-
-					position = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
-					//reply = SLABCommunication.sendMessageToSlab(message);
-
-
-					if (float.Parse(reply.Split(',')[1]) > 0)
-					{
-						//Debug.Log("present source");
-						slabX = position.z;
-						slabY = -position.x;
-						slabZ = position.y;
-						sourcesToInitOnRender.Add(reply.Split(',')[1], new Vector3(slabX, slabY, slabZ));
-						SLABCommunication.sendMessageToSlab("enableSource(" + reply.Split(',')[1].Trim() + ",1)");
-						WorldVariables.AddSLABObbject(reply.Split(',')[1], soundObject);
-						//SLABCommunication.sendMessageToSlab("presentSource("+reply.Split(',')[1].Trim()+"," + slabX + "," + slabY + "," + slabZ + ")");
-					}
-
-					break;
-				case "addNoiseSource":
-					//addNoiseSource ( amplitude,nHRTF,location, visible ) 
-					paramList = match.Groups[2].Value.Trim().Split(',');
-					message = "allocateSigGenSource(N," + paramList[0].Trim() +
-						"," + paramList[1].Trim() +
-						")";
-					x = paramList[2].Trim('[');
-					y = paramList[3];
-					z = paramList[4].Trim(']');
-					visible = paramList[5];
-
-					pos = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
-
-					soundObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-					soundObject.transform.Translate(pos);
-					soundObject.transform.localScale *= .1f;
-					re = soundObject.GetComponent<Renderer>();
-					mats = re.materials;
-					mats[0] = defaultMat;
-					re.materials = mats;
-					soundObject.tag = "SoundSource";
-					if (!visible.ToUpper().Equals("T"))
-					{
-
-						soundObject.SetActive(false);
-
-
-					}
-
-					position = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
-					reply = SLABCommunication.sendMessageToSlab(message);
-
-
-					if (float.Parse(reply.Split(',')[1]) > 0)
-					{
-						//Debug.Log("present source");
-						slabX = position.z;
-						slabY = -position.x;
-						slabZ = position.y;
-						sourcesToInitOnRender.Add(reply.Split(',')[1], new Vector3(slabX, slabY, slabZ));
-						SLABCommunication.sendMessageToSlab("enableSource(" + reply.Split(',')[1].Trim() + ",1)");
-						WorldVariables.AddSLABObbject(reply.Split(',')[1], soundObject);
-						//SLABCommunication.sendMessageToSlab("presentSource("+reply.Split(',')[1].Trim()+"," + slabX + "," + slabY + "," + slabZ + ")");
-					}
-
-					break;
-				case "addWAVSource":
-					paramList = match.Groups[2].Value.Trim().Split(',');
-					//sendMessageToSlab("allocateWaveSource(" + wavName + ",1,1,0)");
-					message = "allocateWaveSource(" + paramList[0].Trim() +
-										"," + paramList[1].Trim() +
-										"," + paramList[2].Trim() +
-										"," + paramList[3].Trim() + ")";
-					x = paramList[4].Trim('[');
-					y = paramList[5];
-					z = paramList[6].Trim(']');
-					visible = paramList[7];
-					pos = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
-
-					soundObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-					soundObject.transform.Translate(pos);
-					soundObject.transform.localScale *= .0801f;
-					re = soundObject.GetComponent<Renderer>();
-					mats = re.materials;
-					mats[0] = defaultMat;
-					re.materials = mats;
-					soundObject.tag = "SoundSource";
-					if (!visible.ToUpper().Equals("T"))
-					{
-
-						soundObject.SetActive(false);
-
-
-					}
-
-					position = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
-					reply = SLABCommunication.sendMessageToSlab(message);
-
-
-					if (float.Parse(reply.Split(',')[1]) > 0)
-					{
-						//Debug.Log("present source");
-						slabX = position.z;
-						slabY = -position.x;
-						slabZ = position.y;
-						sourcesToInitOnRender.Add(reply.Split(',')[1], new Vector3(slabX, slabY, slabZ));
-						SLABCommunication.sendMessageToSlab("enableSource(" + reply.Split(',')[1].Trim() + ",1)");
-						WorldVariables.AddSLABObbject(reply.Split(',')[1], soundObject);
-						//SLABCommunication.sendMessageToSlab("presentSource("+reply.Split(',')[1].Trim()+"," + slabX + "," + slabY + "," + slabZ + ")");
-					}
-					//SLABCommunication.sendMessageToSlab(message);
-					//Debug.Log(reply);
-
-					break;
+				
 				case "adjustSourceLevel":
 					//adjustSourceLevel(src, relativeLevel)
 					paramList = match.Groups[2].Value.Trim().Split(',');
@@ -1225,30 +1206,7 @@ public class SocketCommunicationHandler : MonoBehaviour
 					reply = SLABCommunication.sendMessageToSlab(message);
 
 					break;
-				case "adjustSourcePosition":
-					//adjustSourcePosition(src, pos)
-					paramList = match.Groups[2].Value.Trim().Split(',');
-
-
-					x = paramList[1].Trim('[');
-					y = paramList[2];
-					z = paramList[3].Trim(']');
-
-
-					pos = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
-
-					slabX = pos.z;
-					slabY = -pos.x;
-					slabZ = pos.y;
-
-					message = "presentSource(" + paramList[0].Trim() +
-						"," + slabX +"," + slabY +	"," + slabZ + ")";
-						//pos = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
-					soundObject = WorldVariables.GetSLABObbject(paramList[0].Trim());
-					soundObject.transform.localPosition = pos;
-					reply = SLABCommunication.sendMessageToSlab(message);
-
-					break;
+				
 				case "showSource":
 					//showSource(src, on/off)
 					paramList = match.Groups[2].Value.Trim().Split(',');

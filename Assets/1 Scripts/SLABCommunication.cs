@@ -44,7 +44,7 @@ public class SLABCommunication : MonoBehaviour
     public GameObject crossHair;
     public float crossHairDepth;
     public GameObject panelBase;
-    private Dictionary<int, SourceInformation> currentSources = new Dictionary<int, SourceInformation>();
+    public Dictionary<int, SourceInformation> currentSources = new Dictionary<int, SourceInformation>();
 	//private string response;
 
 	// Use this for initialization
@@ -109,7 +109,7 @@ public class SLABCommunication : MonoBehaviour
 
     }
     public void Reset() {
-        UnityEngine.Debug.Log("INSIDE RESET");
+        //UnityEngine.Debug.Log("INSIDE RESET");
         //string r;
 
         sendMessageToSlab("freeSources()");
@@ -119,13 +119,13 @@ public class SLABCommunication : MonoBehaviour
         //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
         sendMessageToSlab("setWavePath(" + wavDir + ")");
         sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
-        soundSourceList.Clear();
+        currentSources = new Dictionary<int, SourceInformation>();
     }
 
 	// Update is called once per frame
 	void Update()
     {
-        //UnityEngine.Debug.Log(getListenerOrientation());
+         
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -251,9 +251,9 @@ public class SLABCommunication : MonoBehaviour
             sendMessageToSlab("updateSource(" + S.sourceID + "," + relativePosition.x + "," + relativePosition.y + "," + relativePosition.z);
         }
 
-        if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.none && ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.none) {
-            return;
-        }
+        //if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.none && ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.none) {
+        //    return;
+        //}
         if (currentHighlightedObject != null)
         {
             currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(false, false, false, false);
@@ -295,7 +295,6 @@ public class SLABCommunication : MonoBehaviour
                 if (!crossHair.activeSelf) {
                     crossHair.SetActive(true);
                 }
-                
                 crossHair.transform.position = camera.transform.position;
                 crossHair.transform.position = transform.position + camera.transform.forward * crossHairDepth;
                 crossHair.transform.LookAt(crossHair.transform.position + camera.transform.rotation * Vector3.forward, camera.transform.rotation * Vector3.up);
@@ -329,29 +328,14 @@ public class SLABCommunication : MonoBehaviour
 
 
         }
-        if (Input.GetKeyDown(KeyCode.Space)) {
-            if (ConfigurationUtil.waitingForResponse) {
-
-                string message = "waitForResponse,"+(int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",[";
-                Vector3 intersectionPoint = Vector3.zero;
-                if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand) { }
-                else {
-                    intersectionPoint = camera.transform.forward.normalized * 2.08f;
-                }
-                string spkID = GetComponent<ALFLeds>().getNearestSpeakerID(intersectionPoint);
-                message += spkID;
-                message += ",";
-                float respTime = Time.time - ConfigurationUtil.waitStartTime;
-                message += respTime + "]";
-                
-                GetComponent<SocketCommunicationHandler>().sendMessage(message, ConfigurationUtil.waitingClient);
-                ConfigurationUtil.waitingForResponse = false;
-                ConfigurationUtil.waitingClient = null;
-                ConfigurationUtil.waitStartTime = 0.0f;
-
-            }
-
-
+        //UnityEngine.Debug.Log("useRift and button down");
+        
+        
+        if (ConfigurationUtil.useRift && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger)){
+            TriggerPressed();
+        }
+        else if (!ConfigurationUtil.useRift &&Input.GetKeyDown(KeyCode.Space)) {
+            TriggerPressed();
         }
 
 
@@ -361,6 +345,49 @@ public class SLABCommunication : MonoBehaviour
 
 
 	}
+    private void TriggerPressed() {
+
+        if (ConfigurationUtil.waitingForResponse)
+        {
+
+            string message = "waitForResponse," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",[";
+            Vector3 intersectionPoint = Vector3.zero;
+            if (ConfigurationUtil.useRift) {
+                if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand)
+                {
+                    if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
+                        intersectionPoint = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
+                    else
+                        intersectionPoint = (crossHair.transform.position - UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye)).normalized * 2.08f;
+
+
+                }
+                else if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hmd)
+                {
+                    if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
+                        intersectionPoint = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.forward * 2.08f;
+                    else
+                        intersectionPoint = (crossHair.transform.position - UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye)).normalized * 2.08f;
+
+                }
+            }
+            else
+            {
+                intersectionPoint = Camera.main.transform.forward.normalized * 2.08f;
+            }
+            string spkID = GetComponent<ALFLeds>().getNearestSpeakerID(intersectionPoint);
+            message += spkID;
+            message += ",";
+            float respTime = Time.time - ConfigurationUtil.waitStartTime;
+            message += respTime + "]";
+
+            GetComponent<SocketCommunicationHandler>().sendMessage(message, ConfigurationUtil.waitingClient);
+            ConfigurationUtil.waitingForResponse = false;
+            ConfigurationUtil.waitingClient = null;
+            ConfigurationUtil.waitStartTime = 0.0f;
+
+        }
+    }
 
 
 	IEnumerator giveFeedback()
@@ -495,8 +522,13 @@ public class SLABCommunication : MonoBehaviour
         return new Vector3(yaw, -1 * pitch, -1 * roll);
     }
     public void AddSourceInformation(SourceInformation SI) {
-        UnityEngine.Debug.Log("Source information ID : " + SI.sourceID);
+        UnityEngine.Debug.Log("Source information ID : " + SI.sourceID  + "Size of currentSources : " + currentSources.Keys.Count + "Size of current Sources Values " + currentSources.Values.Count);
         currentSources.Add(SI.sourceID, SI);
+
+    }
+    public void UpdateSourcePosition(int id, Vector3 FLTPosition)
+    {
+        currentSources[id].FLTPosition = FLTPosition;
 
     }
     public static string sendMessageToSlab(string message, bool isUDP = false)
