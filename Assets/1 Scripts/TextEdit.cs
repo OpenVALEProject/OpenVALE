@@ -88,6 +88,12 @@ public class TextEdit : MonoBehaviour {
 
     public void OnEnter()
     {
+        if (text.text.Length < minNumsRequired || text.text.Equals(defaultText))
+        {
+            CheckButtonInteraction();
+            return;
+        }
+
         // >>> start enter function code
         string message = "getsubjectnumber," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + text.text;
         sc.sendMessage(message, ConfigurationUtil.waitingClient);
