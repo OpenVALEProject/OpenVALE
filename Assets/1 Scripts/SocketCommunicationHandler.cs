@@ -34,7 +34,7 @@ public class SocketCommunicationHandler : MonoBehaviour
     public bool waitingForResponse = false;
     public string responseToSend = "";
     public GameObject Highlighter;
-
+    private ConfigurationUtil.AudioEngineType currentEngine;
 
 	// Use this for initialization
 	void Awake()
@@ -44,6 +44,8 @@ public class SocketCommunicationHandler : MonoBehaviour
 		clientMessages = new List<MessageContainer>();
 		mainThread = new Thread(WaitForConnections);
 		mainThread.Start();
+        currentEngine = ConfigurationUtil.engineType;
+        
         //Thread monitor = new Thread(() => MonitorThreads());
 		//UnityEngine.Debug.Log(stimulusPlayer);
 	}
@@ -82,21 +84,12 @@ public class SocketCommunicationHandler : MonoBehaviour
 	}
 	private void WaitForConnections()
 	{
-		//Debug.Log("wait for client");
-		//listener = new UdpClient(43201);
 		IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-		//Debug.Log("wait for client");
 		IPAddress ipAddress = ipHostInfo.AddressList[0];
-		//Debug.Log("wait for client");
 		IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, 43201);
-		//listener.Connect(localEndPoint);
-		//Debug.Log("wait for client");
 		serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-		//Debug.Log("wait for client");
 		serverSocket.Bind(localEndPoint);
-		//Debug.Log("wait for client");
 		serverSocket.Listen(10);
-		//Debug.Log("wait for client");
 
 		while (true)
 		{
@@ -339,6 +332,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     if (!int.TryParse(paramList[4], out sourceHRTFID))
                     {
                         reply = "addAudioSource," + ERRORMESSAGES.ErrorType.ERR_AS_HRTFIDMUSTBEINTEGER;
+                        break;
                     }
                     if (!float.TryParse(x, out xF))
                     {
@@ -358,8 +352,35 @@ public class SocketCommunicationHandler : MonoBehaviour
                     Vector3 FLTLocation = HelperFunctions.UnityXYZToFLT(new Vector3(xF, yF, zF));
                     // Allocate a wav source
                     if (paramList[0].ToLower().Equals("wav")) {
-                        reply = SLABCommunication.sendMessageToSlab("allocWaveSrc " + paramList[4] + "");
-                        
+                        string fname = paramList[5].Split('=')[1];
+                        if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                        {
+                            reply = SLABCommunication.sendMessageToSlab("allocWaveSrc " + paramList[4] + "");
+                        }
+                        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
+                        {
+
+                            reply = SLABCommunication.sendMessageToSlab("allocateWaveSource(" + fname + ",0,"+sourceHRTFID +","+ "0)");
+                        }
+                        replyCheck = reply.Split(',');
+
+                        if (int.TryParse(replyCheck[1], out replyCode))
+                        {
+                            if (replyCode > 0)
+                            {
+                                reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + replyCode;
+                            }
+                            else
+                            {
+                                reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
+                        }
+
                     }
                     // Allocate Generator Source
                     if (paramList[0].ToLower().Equals("noisegen"))
@@ -369,9 +390,27 @@ public class SocketCommunicationHandler : MonoBehaviour
                             reply = SLABCommunication.sendMessageToSlab("allocSigGenSrc N,1.0,1000,0,1");
                         }
                         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer) {
-                            reply = SLABCommunication.sendMessageToSlab("allocSigGenSource");
+                            
+                            reply = SLABCommunication.sendMessageToSlab("allocateSigGenSource(N,1.0," +sourceHRTFID+")");
                         }
-                        UnityEngine.Debug.Log(reply);
+                        replyCheck = reply.Split(',');
+
+                        if (int.TryParse(replyCheck[1], out replyCode))
+                        {
+                            if (replyCode > 0)
+                            {
+                                reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + replyCode;
+                            }
+                            else
+                            {
+                                reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
+                        }
                     }
                     // Allocate ASIO Source
                     if (paramList[0].ToLower().Equals("asio"))
@@ -430,6 +469,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         }
                         
                     }
+                    /*
                     string presentReply = SLABCommunication.sendMessageToSlab("presentSource(" + replyCode + "," + FLTLocation.x + "," + FLTLocation.y + "," + FLTLocation.z);
                     replyCheck = presentReply.Split(',');
 
@@ -438,6 +478,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                             reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDINITIALIZELOCATION;
                         }
                     }
+                    */
 
                     break;
                 case "enablesrc":
@@ -446,9 +487,19 @@ public class SocketCommunicationHandler : MonoBehaviour
                     //UnityEngine.Debug.Log(paramList[1].ToLower().Length);
 
                     if (paramList[1].ToLower().Equals("t"))
-                        reply = SLABCommunication.sendMessageToSlab("enableSrc " + paramList[0] + ",1");
+                    { 
+                        if(ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                            reply = SLABCommunication.sendMessageToSlab("enableSrc " + paramList[0] + ",1");
+                        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
+                            reply = SLABCommunication.sendMessageToSlab("enableSource(" + paramList[0] + ",1)");
+                    }
                     else if (paramList[1].ToLower().Equals("f"))
-                        reply = SLABCommunication.sendMessageToSlab("enableSrc " + paramList[0] + ",0");
+                    {
+                        if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                            reply = SLABCommunication.sendMessageToSlab("enableSrc " + paramList[0] + ",0");
+                        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
+                            reply = SLABCommunication.sendMessageToSlab("enableSource(" + paramList[0] + ",0)");
+                    }
                     else reply = "-1";
                     reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
 
@@ -464,7 +515,7 @@ public class SocketCommunicationHandler : MonoBehaviour
 
                         }
                     }
-                    else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                    else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
                     {
                         reply = SLABCommunication.sendMessageToSlab("startRendering(0,0)");
 
@@ -487,10 +538,12 @@ public class SocketCommunicationHandler : MonoBehaviour
                             reply = "startRendering," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
                             break;
                         }
+                        
                     }
+                    SLABCommunication.sendMessageToSlab("presentSource(1,0,10,0)");
+                    SLABCommunication.sendMessageToSlab("muteSource(1,0)");
+                    //File.WriteAllText(".\\logtext.txt", reply.Trim().Split(',')[1].Trim());
 
-                    File.WriteAllText(".\\logtext.txt", reply.Trim().Split(',')[1].Trim());
-                                        
                     /*
                     reply = SLABCommunication.sendMessageToSlab(mC.message);
                     foreach (string key in sourcesToInitOnRender.Keys)

@@ -4,12 +4,13 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 
 public static class WorldVariables{
-	private static Dictionary<string,GameObject> slabSourceIDToGameObject = new Dictionary<string,GameObject>();
+	public static Dictionary<string,GameObject> slabSourceIDToGameObject = new Dictionary<string,GameObject>();
 	public static bool waitingForLocalizationResponse = false;
     public static bool waitingForLocalizationResponseLAE = false;
     public static bool waitingForLocalizationResponseLAESpeaker = false;
 	public static Socket waitingClient = null;
-	public static void AddSLABObbject(string key, GameObject visibleObject){
+    public static Dictionary<int, SourceInformation> Sources= new Dictionary<int, SourceInformation>();
+    public static void AddSLABObbject(string key, GameObject visibleObject){
 
         if (!slabSourceIDToGameObject.ContainsKey(key))
             slabSourceIDToGameObject.Add(key, visibleObject);
