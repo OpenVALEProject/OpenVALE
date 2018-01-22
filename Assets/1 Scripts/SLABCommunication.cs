@@ -48,21 +48,26 @@ public class SLABCommunication : MonoBehaviour
 	//private string response;
 
 	// Use this for initialization
-	void Awake()
+	void Start()
 	{
-
-		foreach (var process in Process.GetProcessesByName("WinAudioServer"))
-		{
-			process.Kill();
-
-
-		}
-        UnityEngine.Debug.Log(spatialAudioServerDirectory + "\\WinAudioServer.exe");
-        slabProcess = new Process();
-        slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\WinAudioServer.exe";
-        //slabProcess.StartInfo.FileName = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\AudioServer3.exe";
-        slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
-
+        if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
+        {
+            foreach (var process in Process.GetProcessesByName("WinAudioServer"))
+            {
+                process.Kill();
+            }
+            UnityEngine.Debug.Log(spatialAudioServerDirectory + "\\WinAudioServer.exe");
+            slabProcess = new Process();
+            slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\WinAudioServer.exe";
+            //slabProcess.StartInfo.FileName = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\AudioServer3.exe";
+            slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
+        }
+        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3) {
+            UnityEngine.Debug.Log(spatialAudioServerDirectory + "AudioServer3.exe");
+            slabProcess = new Process();
+            slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\AudioServer3.exe";
+            slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
+        }
 
 		//UnityEngine.Debug.Log("Should have waited longer?");
 		slabProcess.Start();
@@ -93,10 +98,7 @@ public class SLABCommunication : MonoBehaviour
         
 
         Thread.Sleep(2000);
-
-        //string r;
         sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
-        //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
         sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
         sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
         if (!outDevice.Equals(""))
@@ -274,7 +276,9 @@ public class SLABCommunication : MonoBehaviour
 
                 crossHair.transform.position = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye);
                 //Debug.Log(OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch));
-                crossHair.transform.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch) + (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth ;
+                //crossHair.transform.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch) + (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth ;
+                //crossHair.transform.position = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye) + (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth;
+                crossHair.transform.position = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth;
                 crossHair.transform.LookAt(crossHair.transform.position + UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.forward, UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.up);
                 crossHair.transform.Rotate(Vector3.right, -90);
             }

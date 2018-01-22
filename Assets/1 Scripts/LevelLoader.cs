@@ -38,6 +38,18 @@ public class LevelLoader : MonoBehaviour
                         ConfigurationUtil.spatialAudioServer = t.Trim().Replace('/', '\\');
                         rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
                         break;
+                    case ("SpatialAudioEngineType"):
+                        string spatialAudioNameCheck = t.Trim().Replace('/', '\\');
+                        if (spatialAudioNameCheck.ToLower().Equals("audioserver3"))
+                        {
+                            ConfigurationUtil.engineType = ConfigurationUtil.AudioEngineType.AudioServer3;
+                        }
+                        else if (spatialAudioNameCheck.ToLower().Equals("slabserver"))
+                        {
+                            ConfigurationUtil.engineType = ConfigurationUtil.AudioEngineType.SLABServer;
+                        }
+                        rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        break;
                     case ("ASIOOutputChannels"):
                         ConfigurationUtil.channelMap = t.Trim().Replace('/', '\\');
                         rndrc = nn.SelectSingleNode("UseSpatialAudioServer");

@@ -34,12 +34,9 @@ public class PanelControls : MonoBehaviour {
 	}
     void Update()
     {
-        
-
-
-        rotator.transform.position = new Vector3(UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye).x, -.08f, UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye).z);
+        //rotator.transform.position = new Vector3(UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye).x, -.08f, UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye).z);
+        rotator.transform.position = new Vector3(0f, -.08f,0f);
         //rotator.transform.position = new Vector3(Camera.main.transform.position.x,-.12f, Camera.main.transform.position.z);
-
         //if (mainCamera.transform.rotation.eulerAngles.y > transform.rotation.eulerAngles.y + 10) {
         rotator.transform.rotation = Quaternion.Euler(0, 0, 0);
         rotator.transform.Rotate(Vector3.up, mainCamera.transform.rotation.eulerAngles.y);
@@ -71,7 +68,6 @@ public class PanelControls : MonoBehaviour {
             {
                 returnObject = g;
                 g.SetActive(true);
-
             }
             else {
                 g.SetActive(false);

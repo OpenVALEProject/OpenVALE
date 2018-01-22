@@ -4,6 +4,9 @@
 	<setting name="SpatialAudioServerRootDir" serializeAs="string">
 			<value>D:/VirtualAudio/SlabServer</value>
 		</setting>
+	<setting name="SpatialAudioEngineType" serializeAs="string">
+			<value>SlabServer</value>
+		</setting>
 	<setting name="ASIOInputChannels" serializeAs="string">
 			<value>3,4,5,6</value>
 		</setting>
@@ -20,7 +23,7 @@
 			<value></value>
 		</setting>
 	<setting name="LevelName" serializeAs="string">
-				<value></value>
+				<value>GuessWho</value>
 			</setting>
 	<setting name="HMDType" serializeAs="string">
 			<value>Rift</value>

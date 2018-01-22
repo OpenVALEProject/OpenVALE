@@ -100,7 +100,7 @@ public class GuessWho : MonoBehaviour
             {
                 //Ray r = new Ray(mainCamera.transform.position, crossHair.transform.position - mainCamera.transform.position);
                 Ray r = new Ray(UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye), crossHair.transform.position - UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye));
-                RaycastHit[] hits = Physics.RaycastAll(r, 10);
+                RaycastHit[] hits = Physics.RaycastAll(r, 5);
                 float elapsedTime = Time.time - trialStartTime;
                 message += elapsedTime + ",";                
                 foreach (RaycastHit rh in hits)
@@ -113,7 +113,11 @@ public class GuessWho : MonoBehaviour
                         message += hitObject.GetComponent<PanelDetails>().ID;
                         returnHitInformation = true;
                         isMessageDisplayed = false;
-                        
+
+                        if (trialType == GuessWho.TrialType.ID_BY_LOCATION) {
+                            SetHighlightedOrb(Vector3.zero);
+
+                        }
                         if (giveFeedback)
                         {
                             panelBase.GetComponent<PanelControls>().getPanelByID(correctFacenumber).GetComponent<PanelDetails>().Shake();
@@ -141,11 +145,8 @@ public class GuessWho : MonoBehaviour
             }
             if (!returnHitInformation)
                 return;
-            if (isMessageDisplayed)
-            {
-                isMessageDisplayed = false;
-                UIComponent.hideMessage();
-            }
+            UIComponent.hideMessage();
+            
             isWaitingForResponse = false;
             panelBase.GetComponent<PanelControls>().SetPanelFormatStandard();
             GetComponent<SocketCommunicationHandler>().sendMessage(message, waitingClient);
@@ -171,6 +172,7 @@ public class GuessWho : MonoBehaviour
     }
 
     public GameObject SetHighlightedOrb(Vector3 location) {
+        
         return responseOrbBase.GetComponent<ResponseOrbsController>().HighlightOrbByPosition(location);
     }
 }
