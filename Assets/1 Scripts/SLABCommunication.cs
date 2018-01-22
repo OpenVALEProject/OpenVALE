@@ -39,6 +39,9 @@ public class SLABCommunication : MonoBehaviour
     public GameObject occCam;
     private string spatialAudioServerDirectory = ConfigurationUtil.spatialAudioServer;
     public bool isRendering = false;
+    private GameObject currentHighlightedObject = null;
+    public GameObject crossHair;
+    public float crossHairDepth;
 	//private string response;
 
 	// Use this for initialization
@@ -111,6 +114,14 @@ public class SLABCommunication : MonoBehaviour
     {
         //UnityEngine.Debug.Log(getListenerOrientation());
 
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            #if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+            #else
+                Application.Quit();  
+            #endif
+        }
         GameObject camera;
         if (!ConfigurationUtil.useRift)
         {
@@ -174,9 +185,88 @@ public class SLABCommunication : MonoBehaviour
 			yaw = yaw + 360;
 
 		}
+        if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.none && ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.none) {
+            return;
+        }
+        if (currentHighlightedObject != null)
+        {
+            currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(false, false, false, false);
+
+        }
+
+        if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand) {
+
+
+        }
+   
+        if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hmd) {
+            
+            if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.crosshair) {
+                if (!crossHair.activeSelf) {
+                    crossHair.SetActive(true);
+                }
+                crossHair.transform.position = camera.transform.position;
+                crossHair.transform.position = transform.position + camera.transform.forward * crossHairDepth;
+                crossHair.transform.LookAt(crossHair.transform.position + camera.transform.rotation * Vector3.forward, camera.transform.rotation * Vector3.up);
+                crossHair.transform.Rotate(Vector3.right, -90);
+            }
+            else if(ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
+            {
+                
+                Vector3 intersectionLocation = camera.transform.forward.normalized * 2.08f;
+                currentHighlightedObject = GetComponent<ALFLeds>().getNearestSpeaker(intersectionLocation);
+                if (currentHighlightedObject != null)
+                {
+                    currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(true, true, true, true);
+                }
+            }
+
+        }
+        if (ConfigurationUtil.waitingForRecenter) {
+            Vector3 targetAlignment = (ConfigurationUtil.recenterPosition - camera.transform.forward).normalized;
+            UnityEngine.Debug.Log("Recenter : " + Mathf.Acos(Vector3.Dot(camera.transform.forward, targetAlignment)));
+            if (Mathf.Acos(Vector3.Dot(camera.transform.forward, targetAlignment)) < ConfigurationUtil.recenterTolerance)
+            {
+                
+                string message = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                GetComponent<SocketCommunicationHandler>().sendMessage(message, ConfigurationUtil.waitingClient);
+                ConfigurationUtil.waitingForRecenter = false;
+                ConfigurationUtil.recenterTolerance = 0;
+                ConfigurationUtil.recenterPosition = new Vector3(0, 0, 0);
+                ConfigurationUtil.waitingClient = null;
+            }
+
+
+        }
+        if (Input.GetKeyDown(KeyCode.Space)) {
+            if (ConfigurationUtil.waitingForResponse) {
+
+                string message = "waitForResponse,"+(int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",[";
+                Vector3 intersectionPoint = Vector3.zero;
+                if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand) { }
+                else {
+                    intersectionPoint = camera.transform.forward.normalized * 2.08f;
+                }
+                string spkID = GetComponent<ALFLeds>().getNearestSpeakerID(intersectionPoint);
+                message += spkID;
+                message += ",";
+                float respTime = Time.time - ConfigurationUtil.waitStartTime;
+                message += respTime + "]";
+                
+                GetComponent<SocketCommunicationHandler>().sendMessage(message, ConfigurationUtil.waitingClient);
+                ConfigurationUtil.waitingForResponse = false;
+                ConfigurationUtil.waitingClient = null;
+                ConfigurationUtil.waitStartTime = 0.0f;
+
+            }
+
+
+        }
+
+
 		//soundSource = Random.
-        if(isRendering)
-		    sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")",true);
+        //if(isRendering)
+		//    sendMessageToSlab("updateLstOrienation " + yaw + "," + -1 * pitch + "," + -1 * roll + "",true);
 
 
 	}
@@ -349,7 +439,13 @@ public class SLABCommunication : MonoBehaviour
 		yield return new WaitForSeconds(sec);
 
 	}
-
+    public void TurnOffCursor() {
+        crossHair.SetActive(false);
+    }
+    public void TurnOffSnappedCursor() {
+        currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(false, false, false, false);
+        currentHighlightedObject = null;
+    }
 
 
 

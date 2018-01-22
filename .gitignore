@@ -20,3 +20,4 @@ TestBuilds/
 /ClientSource/build/
 ClientSource/
 Assets/Standard Assets/Characters/FirstPersonCharacter/Scripts/MouseLook.cs
+*.prefab

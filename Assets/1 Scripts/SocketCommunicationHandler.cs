@@ -31,6 +31,9 @@ public class SocketCommunicationHandler : MonoBehaviour
 	public GameObject cursor;
     public bool clientDisconnect = false;
     private List<string> currentSourceList = new List<string>();
+    public bool waitingForResponse = false;
+    public string responseToSend = "";
+    public GameObject Highlighter;
 
 
 	// Use this for initialization
@@ -224,16 +227,16 @@ public class SocketCommunicationHandler : MonoBehaviour
 
 
 			GameObject soundObject;
-			switch (match.Groups[1].Value.Trim().ToLower())
-			{
+            switch (match.Groups[1].Value.Trim().ToLower())
+            {
 
-				case "sethrtf":
+                case "sethrtf":
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     int sourceNumber;
-                    
+
                     // If hrtf ID load hrtf for all sources
                     if (int.TryParse(paramList[0], out sourceNumber))
-                    {   
+                    {
                         bool success = true;
                         foreach (string s in currentSourceList)
                         {
@@ -265,7 +268,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     break;
 
                 case "addaudiosource":
-                    
+
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     //allocwavesrc
                     //Get position information in FLT
@@ -274,13 +277,13 @@ public class SocketCommunicationHandler : MonoBehaviour
                     z = paramList[3].Trim(']');
                     // Allocate a wav source
                     if (paramList[0].ToLower().Equals("wav")) {
-                        reply = SLABCommunication.sendMessageToSlab("allocWaveSrc(" + paramList[4] + ")");
+                        reply = SLABCommunication.sendMessageToSlab("allocWaveSrc " + paramList[4] + "");
                         UnityEngine.Debug.Log(reply);
                     }
                     // Allocate Generator Source
                     if (paramList[0].ToLower().Equals("noisegen"))
                     {
-                        reply = SLABCommunication.sendMessageToSlab("allocSigGenSrc(N,1.0,0,0)");
+                        reply = SLABCommunication.sendMessageToSlab("allocSigGenSrc N,1.0,1000,0,1");
                         UnityEngine.Debug.Log(reply);
                     }
                     // Allocate ASIO Source
@@ -292,8 +295,8 @@ public class SocketCommunicationHandler : MonoBehaviour
                     // Check success 
                     if (replySplit[1].Trim().Equals("0"))
                     {
-                        reply = SLABCommunication.sendMessageToSlab("enableSrc(" + replySplit[2].Trim().Trim(';') + ",1)");
-                        SLABCommunication.sendMessageToSlab("updateSrcXYZ(" + replySplit[2].Trim().Trim(';') + "," + x + "," + y + "," + z + ")");
+                        //reply = SLABCommunication.sendMessageToSlab("enableSrc " + replySplit[2].Trim().Trim(';') + ",1");
+                        //SLABCommunication.sendMessageToSlab("updateSrcXYZ(" + replySplit[2].Trim().Trim(';') + "," + x + "," + y + "," + z + ")");
                         reply = "addaudiosource," + replySplit[2].Trim().Trim(';');
                     }
                     else {
@@ -304,27 +307,24 @@ public class SocketCommunicationHandler : MonoBehaviour
                     //enablesrc
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     //UnityEngine.Debug.Log(paramList[1].ToLower().Length);
-                        
+
                     if (paramList[1].ToLower().Equals("t"))
-                        reply = SLABCommunication.sendMessageToSlab("enableSrc(" + paramList[0] + ",1)");
+                        reply = SLABCommunication.sendMessageToSlab("enableSrc " + paramList[0] + ",1");
                     else if (paramList[1].ToLower().Equals("f"))
-                        reply = SLABCommunication.sendMessageToSlab("enableSrc(" + paramList[0] + ",0)");
+                        reply = SLABCommunication.sendMessageToSlab("enableSrc " + paramList[0] + ",0");
                     else reply = "-1";
-                    reply = reply.Trim().Split(',')[0].Trim() +","+ reply.Trim().Split(',')[1].TrimStart();
-                    
+                    reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
+
                     break;
                 case "startrendering":
                     //start
-                    
-
                     reply = SLABCommunication.sendMessageToSlab("start");
-                    
-                    UnityEngine.Debug.Log(":" +reply.Trim().Split(',')[1].Trim() + ":");
+
                     File.WriteAllText(".\\logtext.txt", reply.Trim().Split(',')[1].Trim());
                     if (reply.Trim().Split(',')[1].Trim().Equals("0;"))
                     {
                         gameObject.GetComponent<SLABCommunication>().isRendering = true;
-                        
+
                     }
                     reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
                     /*
@@ -340,7 +340,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     */
                     break;
                 case "endrendering":
-                    //stop
+                //stop
                 case "reset":
                     //exit and restart
                     gameObject.GetComponent<SLABCommunication>().Reset();
@@ -352,38 +352,400 @@ public class SocketCommunicationHandler : MonoBehaviour
                     break;
                 case "adjustsourcelevel":
                     //adjsrcgain
+
                     paramList = match.Groups[2].Value.Trim().Split(',');
-                    reply = SLABCommunication.sendMessageToSlab("adjsrcgain(" + paramList[0] + "," + paramList[1]+")");
+                    reply = SLABCommunication.sendMessageToSlab("adjsrcgain " + paramList[0] + "," + paramList[1] + " ");
                     reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
                     break;
                 case "adjustoveralllevel":
-                    //adjsrcgain for each current source
+                //adjsrcgain for each current source
                 case "adjustsourceposition":
                     //presentsrcxyz
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    x = paramList[1].Trim('[');
+                    y = paramList[2];
+                    z = paramList[3].Trim(']');
+                    reply = SLABCommunication.sendMessageToSlab("updateSrcXYZ " + paramList[0].Trim().Trim(';') + "," + x + "," + y + "," + z + "");
+                    reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
+                    break;
                 case "muteaudiosource":
                     paramList = match.Groups[2].Value.Trim().Split(',');
-                    UnityEngine.Debug.Log(paramList[1].ToLower().Length);
+
 
                     if (paramList[1].ToLower().Equals("t"))
-                        reply = SLABCommunication.sendMessageToSlab("muteSrc(" + paramList[0] + ",1)");
+                        reply = SLABCommunication.sendMessageToSlab("muteSrc " + paramList[0] + ",1");
                     else if (paramList[1].ToLower().Equals("f"))
-                        reply = SLABCommunication.sendMessageToSlab("muteSrc(" + paramList[0] + ",0)");
+                        reply = SLABCommunication.sendMessageToSlab("muteSrc " + paramList[0] + ",0");
                     else
                         reply = "-1";
                     break;
                 //mutesrc
                 case "setleds":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    int ledIndex = 0;
+                    GameObject ledHarness = null;
+                    int speakerID;
+                    if (paramList[0].Contains("["))
+                    {
+
+                        ledIndex = 3;
+                        x = paramList[0].Trim('[');
+                        y = paramList[1];
+                        z = paramList[2].Trim(']');
+
+
+                        float xF = 0;
+                        float yF = 0;
+                        float zF = 0;
+                        if (!float.TryParse(x, out xF))
+                        {
+                            reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                            break;
+                        }
+                        if (!float.TryParse(y, out yF))
+                        {
+                            reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                            break;
+                        }
+                        if (!float.TryParse(z, out zF))
+                        {
+                            reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                            break;
+                        }
+
+                        ledHarness = GetComponent<ALFLeds>().getNearestSpeaker(HelperFunctions.FLTToUnityXYZ(new Vector3(xF, yF, zF)));
+
+                    }
+                    else if (int.TryParse(paramList[0], out speakerID))
+                    {
+                        ledIndex = 1;
+                        ledHarness = GetComponent<ALFLeds>().getSpeakerByID(paramList[0]);
+
+                    }
+                    else {
+                        reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_CMDSYN;
+                    }
+
+                    int maskW;
+                    int maskX; //= paramList[ledIndex].Trim('[');
+                    int maskY; //= paramList[ledIndex];
+                    int maskZ; //= paramList[ledIndex].Trim(']');
+                    if (!int.TryParse(paramList[ledIndex].Trim('['), out maskW))
+                    {
+                        reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_MASKPARSEFAILURE;
+                        break;
+                    }
+                    if (!int.TryParse(paramList[ledIndex + 1], out maskX))
+                    {
+                        reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_MASKPARSEFAILURE;
+                        break;
+                    }
+                    if (!int.TryParse(paramList[ledIndex + 2], out maskY))
+                    {
+                        reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_MASKPARSEFAILURE;
+                        break;
+                    }
+                    if (!int.TryParse(paramList[ledIndex + 3].Trim(']'), out maskZ))
+                    {
+                        reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_MASKPARSEFAILURE;
+                        break;
+                    }
+
+                    if (ledHarness != null)
+                    {
+                        ledHarness.GetComponent<LEDControls>().HighlightLEDs(System.Convert.ToBoolean(maskW), System.Convert.ToBoolean(maskX), System.Convert.ToBoolean(maskY), System.Convert.ToBoolean(maskZ), true);
+                    }
+                    else {
+                        reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_CMDNOTRECOGNIZED;
+                    }
+                    reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                    break;
                 case "showfreecursor":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    if (paramList[0].ToLower().Equals("head"))
+                    {
+                        if (paramList[1].ToLower().Equals("t"))
+                        {
+                            ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.crosshair;
+                            ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hmd;
+
+                        }
+                        else if (paramList[1].ToLower().Equals("f"))
+                        {
+
+                            GetComponent<SLABCommunication>().TurnOffCursor();
+                            ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
+                            ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hmd;
+
+                        }
+                        else
+                        {
+                            reply = "showfreecursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_BOOLPARSEFAILURE;
+                        }
+                    }
+                    else if (paramList[0].ToLower().Equals("hand"))
+                    {
+                        if (paramList[1].ToLower().Equals("t"))
+                        {
+                            ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.crosshair;
+                            ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hand;
+
+                        }
+                        else if (paramList[1].ToLower().Equals("f"))
+                        {
+
+                            GetComponent<SLABCommunication>().TurnOffCursor();
+                            ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
+                            ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hand;
+
+                        }
+                        else
+                        {
+                            reply = "showfreecursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_BOOLPARSEFAILURE;
+                        }
+
+
+                    }
+                    else {
+                        reply = "showfreecursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_PARAMETEROUTOFRANGE;
+                    }
+                    reply = "showfreecursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+
+                    break;
                 case "showsnappedcursor":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    if (paramList[0].ToLower().Equals("head"))
+                    {
+                        if (paramList[1].ToLower().Equals("t"))
+                        {
+                            ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.snapped;
+                            ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hmd;
+
+                        }
+                        else if (paramList[1].ToLower().Equals("f"))
+                        {
+
+                            GetComponent<SLABCommunication>().TurnOffCursor();
+                            ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
+                            ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hmd;
+
+                        }
+                        else
+                        {
+                            reply = "showsnappedcursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_BOOLPARSEFAILURE;
+                        }
+                    }
+                    else if (paramList[0].ToLower().Equals("hand"))
+                    {
+                        if (paramList[1].ToLower().Equals("t"))
+                        {
+                            ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.snapped;
+                            ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hand;
+
+                        }
+                        else if (paramList[1].ToLower().Equals("f"))
+                        {
+
+                            GetComponent<SLABCommunication>().TurnOffSnappedCursor();
+                            ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
+                            ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hand;
+
+                        }
+                        else
+                        {
+                            reply = "showsnappedcursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_BOOLPARSEFAILURE;
+                        }
+
+
+                    }
+                    else
+                    {
+                        reply = "showsnappedcursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_PARAMETEROUTOFRANGE;
+                    }
+                    reply = "showsnappedcursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                    break;
                 case "addlogtag":
                 case "waitforresponse":
+                    ConfigurationUtil.waitingForResponse = true;
+                    ConfigurationUtil.waitingClient = mC.sender;
+                    ConfigurationUtil.waitStartTime = Time.time;
+                    reply = "";
+                    break;
                 case "waitforrecenter":
+                    ConfigurationUtil.waitingForRecenter = true;
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    Vector3 target = Vector3.zero;
+                    float tol = 0;
+                    if (paramList[0].Contains("["))
+                    {
+                        x = paramList[0].Trim('[');
+                        y = paramList[1];
+                        z = paramList[2].Trim(']');
+                        float xF = 0;
+                        float yF = 0;
+                        float zF = 0;
+                        if (!float.TryParse(x, out xF))
+                        {
+                            reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                            break;
+                        }
+                        if (!float.TryParse(y, out yF))
+                        {
+                            reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                            break;
+                        }
+                        if (!float.TryParse(z, out zF))
+                        {
+                            reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                            break;
+                        }
+                        target = new Vector3(xF, yF, zF);
+                        if (!float.TryParse(paramList[3], out tol)) {
+                            reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_PARAMETEROUTOFRANGE;
+                            break;
+
+                        }
+                    }
+                    else if (int.TryParse(paramList[0], out speakerID))
+                    {
+                        
+                        target = GetComponent<ALFLeds>().getSpeakerByID(paramList[0]).transform.position;
+                        if (!float.TryParse(paramList[1], out tol))
+                        {
+                            reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_PARAMETEROUTOFRANGE;
+                            break;
+
+                        }
+                    }
+                    else
+                    {
+                        reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_CMDSYN;
+                    }
+                    ConfigurationUtil.waitingClient = mC.sender;
+                    ConfigurationUtil.recenterPosition = target;
+                    ConfigurationUtil.recenterTolerance = tol;
+                    reply = "";
+                    
+                    break;
                 case "getheadorientation":
                 case "gethead6dof":
                 case "getnearestspeaker":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+
+                    x = paramList[0].Trim('[');
+                    y = paramList[1];
+                    z = paramList[2].Trim(']');
+                    
+                    float xFl = 0;
+                    float yFl = 0;
+                    float zFl = 0;
+                    if (!float.TryParse(x, out xFl))
+                    {
+                        reply = "getNearestSpeaker," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                        break;
+                    }
+                    if (!float.TryParse(y, out yFl))
+                    {
+                        reply = "getNearestSpeaker," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                        break;
+                    }
+                    if (!float.TryParse(z, out zFl))
+                    {
+                        reply = "getNearestSpeaker," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                        break;
+                    }
+                    reply = "getNearestSpeaker," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + GetComponent<ALFLeds>().getNearestSpeakerID(HelperFunctions.FLTToUnityXYZ( new Vector3(xFl, yFl, zFl)));
+                    
+                    break;
                 case "getspeakerposition":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    if (GetComponent<ALFLeds>().getSpeakerByID(paramList[0])!= null) {
+                        Vector3 positionVector = HelperFunctions.UnityXYZToFLT(GetComponent<ALFLeds>().getSpeakerByID(paramList[0]).transform.position);
+                        reply = "getSpeakerPosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",["+positionVector.x+ ","+positionVector.y+ ","+positionVector.z + "]";
+                        
+                        break;
+                    }
+                    reply = "getSpeakerPosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SPEAKERNOTFOUND;
+                    break;
                 case "getcurrenthrtf":
                 case "highlightlocation":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    Vector3 locationToMoveHighlighter = Vector3.zero;
+                    int colorBaseLocation = 0;
+                    Color color = Color.clear;
+                    if (paramList.Length < 2)
+                    {
+                        Highlighter.SetActive(false);
+                        reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                        break;
+                    }
+                    else {
+                        Highlighter.SetActive(true);
+                        if (paramList[0].Contains("["))
+                        {
+                            x = paramList[0].Trim('[');
+                            y = paramList[1];
+                            z = paramList[2].Trim(']');
+                            float xF = 0;
+                            float yF = 0;
+                            float zF = 0;
+                            if (!float.TryParse(x, out xF))
+                            {
+                                reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                                break;
+                            }
+                            if (!float.TryParse(y, out yF))
+                            {
+                                reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                                break;
+                            }
+                            if (!float.TryParse(z, out zF))
+                            {
+                                reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                                break;
+                            }
+                            locationToMoveHighlighter = HelperFunctions.FLTToUnityXYZ(new Vector3(xF, yF, zF));
+                            colorBaseLocation = 3;
+                        }
+                        else if (int.TryParse(paramList[0], out speakerID))
+                        {
+                            locationToMoveHighlighter = GetComponent<ALFLeds>().getSpeakerByID(speakerID.ToString()).transform.position;
+                            colorBaseLocation = 1;
+                        }
+                        else {
+                            reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_CMDSYN;
+                            break;
+                        }
+                        x = paramList[colorBaseLocation].Trim('[');
+                        y = paramList[colorBaseLocation+1];
+                        z = paramList[colorBaseLocation+2].Trim(']');
+                        float rF = 0;
+                        float gF = 0;
+                        float bF = 0;
+                        if (!float.TryParse(x, out rF))
+                        {
+                            reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_COLORPARSEFAILURE;
+                            break;
+                        }
+                        if (!float.TryParse(y, out gF))
+                        {
+                            reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_COLORPARSEFAILURE;
+                            break;
+                        }
+                        if (!float.TryParse(z, out bF))
+                        {
+                            reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_COLORPARSEFAILURE;
+                            break;
+                        }
+                        color = new Color(rF, gF, bF,0.7f);
+                        Highlighter.GetComponent<Renderer>().material.SetColor("_Color", color);
+                        Highlighter.transform.position = locationToMoveHighlighter;
+                        reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                        
+                    }
+
+
+                    break;
                 case "displaymessage":
                   
                 case"useWand":
@@ -789,7 +1151,8 @@ public class SocketCommunicationHandler : MonoBehaviour
 				default:
 					if (ConfigurationUtil.isDebug)
 						LogSystem.Log("Unable to process command" + match.Groups[0].Value);
-					reply = "-1";
+					reply = match.Groups[1].Value.Trim().ToLower() + "," + (int)ERRORMESSAGES.ErrorType.ERR_AS_CMDNOTRECOGNIZED;
+
 
 					break;
 
@@ -801,6 +1164,7 @@ public class SocketCommunicationHandler : MonoBehaviour
 			}
 			if (!reply.Equals(""))
 			{
+                /*
                 reply = reply.Replace(";", string.Empty);
                 if (ConfigurationUtil.isDebug)
 					LogSystem.Log("Sent : " + reply);
@@ -810,7 +1174,8 @@ public class SocketCommunicationHandler : MonoBehaviour
 				writer.Flush();
 				writer.Close();
 				n.Close();
-
+                */
+                sendMessage(reply, mC.sender);
 			}
 
 
@@ -825,7 +1190,20 @@ public class SocketCommunicationHandler : MonoBehaviour
 
 
 	}
-	void OnDestroy()
+    public void sendMessage(string message, Socket client) {
+        string reply = message.Replace(";", string.Empty);
+        if (ConfigurationUtil.isDebug)
+            LogSystem.Log("Sent : " + reply);
+        NetworkStream n = new NetworkStream(client);
+        StreamWriter writer = new StreamWriter(n, ASCIIEncoding.ASCII);
+        writer.WriteLine(reply);
+        writer.Flush();
+        writer.Close();
+        n.Close();
+
+
+    }
+    void OnDestroy()
 	{
 		foreach (Socket s in clients)
 		{
