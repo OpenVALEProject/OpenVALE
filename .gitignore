@@ -13,7 +13,6 @@ Assets/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs
 *.mat
 *.png
 *.suo
-*.txt
 *.unity
 TestBuilds/
 /ClientSource/nbproject/private/
@@ -33,3 +32,7 @@ Assets/Plugins/Android/Assets/PUT_OSIG_HERE
 DemoServer/
 OpenVALEConfig_working.xml
 DemoServer/
+UnityServerLog.txt
+logtext.txt
+Debugging Notes.txt
+Assets/LICENSE.txt

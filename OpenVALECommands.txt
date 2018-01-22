@@ -1,0 +1,162 @@
+All coordinate values for position should be passed and returned as Front,Left,Top (FLT).  Positive forward,left,up.
+
+Configuration file:
+Filename OpenVALEConfig.xml
+
+Format example:
+	<setting name="SpatialAudioServerRootDir" serializeAs="string">
+			<value>./DemoServer</value>
+		</setting>
+		
+List of values:
+SpatialAudioServerRootDir = 
+	- Only supports absolute path or relative subfolders
+
+SpatialAudioEngineType
+	- Possible values "AudioServer3" or "SlabServer"
+
+HRTFDirectory
+	- Absolute path to folder containing HRTFs
+
+WavPath
+	- Absolute path to folder containing .wav files
+
+ASIOInputChannels
+	- Comma seperated list of integers.
+	- Zero based
+	- Example : 0,1,2,3
+
+LevelName
+	- Name of a level built in the OpenVALE 
+	- If blank will use Virtual ALF
+
+HMDType 
+	- Possible values "Rift" or "None"
+	- If blank will default to Rift
+	
+All commands that the return format of commandname,status code,return values. (ie AddAudioSource will return AddAudioSource,0,1)
+	
+Pre-render
+
+err = loadHRTF(filename)
+	- Loads an HRTF file
+	- if successful will return the OpenVALE ID for the HRTF which can be used for future calls
+	- Example 1: loadHRTF(KEMAR.slh)
+	
+srcID = addAudioSource(Type, initialPosition, HRTFid, extraParams)
+	- Initializes source in the sound engine and returns the OpenVALE reference for the source
+	- Current supported values for Type are: wav, noiseGen, ASIO
+	- InitialPosition is of format [f,l,t]
+	- extraParams for wav source filename=wavname.wav
+	- extraParams for asio source number of channels integer
+	- Example 1: addAudioSource(wav,[2,0,1],0,filename=wavname.wav)
+	- Example 2: addAudioSource(noiseGen,[3,1,3],0)
+	- Example 3: addAudioSource(asio,[3,1,3],0,6)
+
+Err = startRendering
+	- Sets the sound engine to render mode
+	- All unmuted and enabled source begin play
+	- Example startRendering()
+
+Err = defineFront 
+	- define the origin of position and azimuth based on the HMDs current orientation and position
+	
+During Render Commands
+Err = enableSrc(srcID,T/F)
+	- Enable or disable a source based on the boolean passed
+	- Example enableSrc(1,T)
+
+err = setHRTF(sourceNumber,HRTFid)
+	- Same as pre-render command
+
+err = adjustSourceLevel(srcID,relativeLevel)
+	- Adjust the relative level of an audio source
+	- srcID is the OpenVALE audio source ID
+	- relative level is in dB
+	- Example adjustSourceLevel(1,5)
+	
+err =adjustOverallLevel(relativeLevel)
+	- Adjust the relative level of all sources
+	- relative level is in dB
+	- Example adjustOverallLevel(5)
+	
+err =adjustSourcePosition(srcID, Position = [x,y,z] or SpkID)
+	- Moves a source to a new position
+	- srcID is the OpenVALE audio source ID
+	- Position of the format [f,l,t]
+	- spkID is the ID of the speaker in ALF
+	- Example 1: adjustSourcePosition(1,[1,2,3])
+	- Example 2: adjustSourcePosition(1,274)
+	
+err =muteAudioSource(srcID,T/F)
+	- Mutes an audio source 
+	- Example muteAudioSource(1,T)
+	
+err =setLEDs(Position = [x,y,z] or SpkID, LEDMask = [1,0,0,1])
+	- Set LEDs on/off based on nearest speaker to position or speaker ID
+	- For LEDMask 1 = turn LED on, 0 = turn LED off
+	- Example setLEDs([f,l,t],[1,0,1,0])
+	- Example setLEDs(1,[1,0,1,0])
+	
+err =showFreeCursor(whichCursor = {‘head’,’hand’}, T/F)
+	- Shows the cursor attached to chosen object
+	- Example showFreeCursor(head,T)
+	
+err =showSnappedCursor(whichCursor = {‘head’,’hand’}, T/F)
+	- Turns on the LEDs of the speaker the user is pointing toward
+	- Example showSnappedCursor(head,T)
+
+Runtime Queries
+	
+spkID, respTime = waitForResponse()	
+	- Waits for the user to press the trigger on the right hand controller 
+	- Returns nearest speaker ID to the currently active cursor
+	- if no cursor is active, returns the nearest speaker to free cursor attached to the head
+	
+err =waitForReCenter(spkID or position,tolerance)
+	- Waits for the user to face a specified position or speaker
+	- Tolerance is in radians
+	- Example 1 : waitForReCenter(1,.1)
+	- Example 2 : waitForReCenter([1,2,3], .1)
+	
+[orientation] = getHeadOrientation()
+	- returns the heads current orientation in Yaw Pitch Roll Radians
+	
+[position],[orientation] = getHead6DOF()
+	- returns the position in FLT meters
+	- returns orientation in YPR Radians
+	
+spkID,errorDistance = getNearestSpeaker(position) 
+	- Returns the nearest speaker to the given position
+	- error distance in is meters
+	- Example : getNearestSpeaker([1,2,3])
+
+[position] = getSpeakerPosition(spkID) 
+	- Returns the FLT position of the speaker ID
+	- Example : getSpeakerPosition(1)
+
+metadata = getCurrentHRTF()
+	- Returns the filename of the currently active HRTF
+	- Example getCurrentHRTF()
+
+err = highlightlocation(spkID or position,color)
+	- Shows a highlighted location with a specified color
+	- Color format [r,g,b] where r g b are between 0,1
+	- Calling highlightLocation() will hide the highlight
+	- Example : highlightlocation(274,[1,.5,1])
+	- Example : highlightlocation([2,1.7,4],[1,.5,1])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
