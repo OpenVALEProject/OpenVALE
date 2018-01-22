@@ -2,10 +2,10 @@
 <configuration>
   <applicationSettings>
 	<setting name="SpatialAudioServerRootDir" serializeAs="string">
-			<value>D:/VirtualAudio/SlabServer</value>
+			<value>D:/Development/AudioServer3/AudioServer3/bin/Debug</value>
 		</setting>
 	<setting name="SpatialAudioEngineType" serializeAs="string">
-			<value>SlabServer</value>
+			<value>AudioServer3</value>
 		</setting>
 	<setting name="ASIOInputChannels" serializeAs="string">
 			<value>3,4,5,6</value>
@@ -14,16 +14,16 @@
 			<value>1,2</value>
 		</setting>
 	<setting name="HRTFDirectory" serializeAs="string">
-			<value>../../VirtualAudio/HRTFs</value>
+			<value>C:\VirtualAudio\HRTFs</value>
 		</setting>
 	<setting name="WavDirectory" serializeAs="string">
-			<value>../../VirtualAudio/Waves</value>
+			<value>C:\VirtualAudio\WaveFiles</value>
 		</setting>
 	<setting name="OutDeviceParams" serializeAs="string">
 			<value></value>
 		</setting>
 	<setting name="LevelName" serializeAs="string">
-				<value>GuessWho</value>
+				<value></value>
 			</setting>
 	<setting name="HMDType" serializeAs="string">
 			<value>Rift</value>
