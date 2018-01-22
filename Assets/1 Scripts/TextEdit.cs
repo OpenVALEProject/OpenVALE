@@ -103,7 +103,11 @@ public class TextEdit : MonoBehaviour {
 
     public void OnBackspace()
     {
-        text.text = text.text.Remove(text.text.Length - 1);
-        CheckButtonInteraction();
+        if (text.text.Length == 0 || text.text.Equals(defaultText)) {
+            CheckButtonInteraction();
+            return;
+    }
+            text.text = text.text.Remove(text.text.Length - 1);
+        
     }
 }
