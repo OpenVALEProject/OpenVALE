@@ -23,19 +23,15 @@ public static class ConfigurationUtil  {
     public static string inputDevice = "W";
     public static string spatialAudioServer = "";
     public static string levelName = "OpenVALE";
-    //public static string levelName = "OpenVALE";
     public static bool useSpatialAudioServer = true;
-    //public static CursorType currentCursorType = CursorType.none;
-    //public static CursorAttachment currentCursorAttachment = CursorAttachment.none; //CursorAttachment.hmd;
-    public static CursorType currentCursorType = CursorType.none;//CursorType.crosshair;
-    public static CursorAttachment currentCursorAttachment = CursorAttachment.none;//CursorAttachment.hand; //CursorAttachment.hmd;
+    public static CursorType currentCursorType = CursorType.none;
+    public static CursorAttachment currentCursorAttachment = CursorAttachment.none;
     public static bool waitingForResponse = false;
     public static Socket waitingClient = null;
     public static float waitStartTime = 0.0f;
     public static bool waitingForRecenter = false;
     public static Vector3 recenterPosition = Vector3.zero;
     public static float recenterTolerance = 0;
-    //public static AudioEngineType engineType = AudioEngineType.AudioServer3;//AudioEngineType.SLABServer;
     public static AudioEngineType engineType = AudioEngineType.SLABServer;
 
 }

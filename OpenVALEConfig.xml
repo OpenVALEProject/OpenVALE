@@ -18,13 +18,13 @@
 			<value>C:/VirtualAudio/WaveFiles</value>
 		</setting>
 	<setting name="OutDeviceParams" serializeAs="string">
-			<value>ASIO</value>
+			<value></value>
 		</setting>
 	<setting name="LevelName" serializeAs="string">
 				<value></value>
 			</setting>
 	<setting name="HMDType" serializeAs="string">
-			<value>Rift</value>
+			<value>None</value>
 		</setting>
   
   

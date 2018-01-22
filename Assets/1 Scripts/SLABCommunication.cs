@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿/*
+ * Used to communicate with the external Audio Spatialization Tools
+*/
+
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,7 +24,6 @@ public class SLABCommunication : MonoBehaviour
 	public float soundDelay = 1.1f;
 	public float nextSound = 0.0f;
 	private bool mute = true;
-	//private int ypos = 10;
 	private GameObject soundSource;
 	private List<GameObject> soundSourceList;
 	private bool init = true;
@@ -28,7 +31,6 @@ public class SLABCommunication : MonoBehaviour
 	public bool triggerFeedback = false;
 	private bool feedbackFinished = true;
 	private static string HRTFDir = ConfigurationUtil.HRTFDir;
-	//private string HRTFName = ConfigurationUtil.HRTFName;
 	private static string wavDir = ConfigurationUtil.wavDir;
 	private static string wavName = ConfigurationUtil.wavName;
 	private static string outDevice = ConfigurationUtil.IODevice;
@@ -45,7 +47,6 @@ public class SLABCommunication : MonoBehaviour
     public float crossHairDepth;
     public GameObject panelBase;
     public static Dictionary<int, SourceInformation> currentSources = new Dictionary<int, SourceInformation>();
-	//private string response;
 
 	// Use this for initialization
 	void Start()
@@ -59,7 +60,6 @@ public class SLABCommunication : MonoBehaviour
             UnityEngine.Debug.Log(spatialAudioServerDirectory + "\\WinAudioServer.exe");
             slabProcess = new Process();
             slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\WinAudioServer.exe";
-            //slabProcess.StartInfo.FileName = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\AudioServer3.exe";
             slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
         }
         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3) {
@@ -75,9 +75,7 @@ public class SLABCommunication : MonoBehaviour
             slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\AudioServer3.exe";
             slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
         }
-
-		//UnityEngine.Debug.Log("Should have waited longer?");
-		slabProcess.Start();
+        slabProcess.Start();
 
 		Thread.Sleep(500);
         while (true)
@@ -122,13 +120,9 @@ public class SLABCommunication : MonoBehaviour
         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
         {
             sendMessageToSlab("hrtfPath " + HRTFDir + "");
-            
-            //sendMessageToSlab("defAsioOutChMap " + outChannelMap + "");
-           
             if (!outDevice.Equals(""))
             {
                 UnityEngine.Debug.Log("ASIO");
-               //sendMessageToSlab("outDev " + outDevice + ",0");
             }
             sendMessageToSlab("defAsioInChMap " + channelMap + "");
             sendMessageToSlab("wavePath " + wavDir + "");
@@ -140,15 +134,11 @@ public class SLABCommunication : MonoBehaviour
     }
 
     public void Reset() {
-        //UnityEngine.Debug.Log("INSIDE RESET");
-        //string r;
         if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
         {
             sendMessageToSlab("freeSources()");
             Thread.Sleep(500);
-
             sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
-            //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
             sendMessageToSlab("setWavePath(" + wavDir + ")");
             sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
         }
@@ -159,25 +149,20 @@ public class SLABCommunication : MonoBehaviour
             {
                 slabResponse = sendMessageToSlab("isRendering");
                 Thread.Sleep(1000);
-                //break;
             }
             while (slabResponse.Trim().Trim(';').Split(':')[1].Trim().Equals("1"));
             sendMessageToSlab("Start");
             Thread.Sleep(500);
 
             sendMessageToSlab("hrtfPath " + HRTFDir + "");
-            //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
-            //sendMessageToSlab("defAsioOutChMap " + channelMap + "");
             sendMessageToSlab("defAsioInChMap " + channelMap + "");
             sendMessageToSlab("wavePath " + wavDir + "");
             string slabDirectory = Path.Combine(spatialAudioServerDirectory, "slab3d");
             UnityEngine.Debug.Log(sendMessageToSlab("slabRoot " + slabDirectory));
             sendMessageToSlab("binPath bin");
             sendMessageToSlab("setFirTaps " + FIRTaps + "");
+    }
 
-
-
-        }
         currentSources = new Dictionary<int, SourceInformation>();
     }
 
@@ -194,7 +179,6 @@ public class SLABCommunication : MonoBehaviour
             UnityEngine.Debug.Log(ConfigurationUtil.spatialAudioServer + "\\WinAudioServer.exe");
             slabProcess = new Process();
             slabProcess.StartInfo.FileName = ConfigurationUtil.spatialAudioServer + "\\WinAudioServer.exe";
-            //slabProcess.StartInfo.FileName = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\AudioServer3.exe";
             slabProcess.StartInfo.WorkingDirectory = ConfigurationUtil.spatialAudioServer + "\\";
         }
         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
@@ -204,8 +188,6 @@ public class SLABCommunication : MonoBehaviour
             slabProcess.StartInfo.FileName = ConfigurationUtil.spatialAudioServer + "\\AudioServer3.exe";
             slabProcess.StartInfo.WorkingDirectory = ConfigurationUtil.spatialAudioServer + "\\";
         }
-
-        //UnityEngine.Debug.Log("Should have waited longer?");
         slabProcess.Start();
         Thread.Sleep(500);
         while (true)
@@ -225,20 +207,16 @@ public class SLABCommunication : MonoBehaviour
                 UnityEngine.Debug.Log("Connected");
                 LogSystem.Log("Connected to IPSS");
                 break;
-
             }
         }
 
         slabStream = slabConnection.GetStream();
-
-
         Thread.Sleep(2000);
         sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
         sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
         sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
         if (!outDevice.Equals(""))
         {
-            UnityEngine.Debug.Log("ASIO");
             sendMessageToSlab("selectOutDevice(" + outDevice + ")");
         }
         sendMessageToSlab("setWavePath(" + wavDir + ")");
@@ -249,24 +227,23 @@ public class SLABCommunication : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
-
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
+            #if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+            #else
                 Application.Quit();  
-#endif
+            #endif
         }
         GameObject camera;
         float yaw;
         float pitch;
         float roll;
         camera = joystickCam;
+
         if (!ConfigurationUtil.useRift)
         {
-            //UnityEngine.Debug.Log(joystickCam.transform.rotation);
+            
 
             if (Input.GetKey(KeyCode.A))
             {
@@ -329,12 +306,8 @@ public class SLABCommunication : MonoBehaviour
         }
         else
         {
-            //UnityEngine.Debug.Log("WrongOne");
-
-
-            //GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
             Vector3 orientationVector = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.Head).eulerAngles;
-            roll = orientationVector.z;//eulerAngles.z;
+            roll = orientationVector.z;
             while (roll > 180)
             {
                 roll = roll - 360;
@@ -384,9 +357,6 @@ public class SLABCommunication : MonoBehaviour
             Vector3 FLTCameraPosition = HelperFunctions.UnityXYZToFLT(cameraPosition);
             sendMessageToSlab("updateLst6DOF " + FLTCameraPosition.x + "," + -FLTCameraPosition.y + "," + FLTCameraPosition.z + "," + yaw + ", " + -pitch + ", " + -roll);
         }
-        //if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.none && ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.none) {
-        //    return;
-        //}
         if (currentHighlightedObject != null)
         {
             currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(false, false, false, false);
@@ -406,10 +376,7 @@ public class SLABCommunication : MonoBehaviour
                 // Vector3 cameraForward = camera.transform.forward;
 
                 crossHair.transform.position = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye);
-                //Debug.Log(OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch));
-                //crossHair.transform.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch) + (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth ;
-                //crossHair.transform.position = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye) + (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth;
-                crossHair.transform.position = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth;
+               crossHair.transform.position = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth;
                 crossHair.transform.LookAt(crossHair.transform.position + UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.forward, UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.up);
                 crossHair.transform.Rotate(Vector3.right, -90);
             }
@@ -462,22 +429,13 @@ public class SLABCommunication : MonoBehaviour
 
 
         }
-        //UnityEngine.Debug.Log("useRift and button down");
-        
-        
         if (ConfigurationUtil.useRift && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger)){
             TriggerPressed();
         }
         else if (!ConfigurationUtil.useRift &&Input.GetKeyDown(KeyCode.Space)) {
             TriggerPressed();
         }
-
-
-		//soundSource = Random.
-        //if(isRendering)
-		//    sendMessageToSlab("updateLstOrienation " + yaw + "," + -1 * pitch + "," + -1 * roll + "",true);
-
-
+        
 	}
     private void TriggerPressed() {
 
@@ -493,8 +451,6 @@ public class SLABCommunication : MonoBehaviour
                         intersectionPoint = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
                     else
                         intersectionPoint = (crossHair.transform.position - UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye)).normalized * 2.08f;
-
-
                 }
                 else if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hmd)
                 {
@@ -502,7 +458,6 @@ public class SLABCommunication : MonoBehaviour
                         intersectionPoint = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.forward * 2.08f;
                     else
                         intersectionPoint = (crossHair.transform.position - UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye)).normalized * 2.08f;
-
                 }
             }
             else
@@ -530,102 +485,78 @@ public class SLABCommunication : MonoBehaviour
 	{
 
 		slabProcess.Kill();
-		//slabStream.Close();
-		//slabConnection.Close();
 
 	}
     public Vector3 getListenerOrientation() {
         GameObject camera;
         if (!ConfigurationUtil.useRift)
         {
-            //UnityEngine.Debug.Log(joystickCam.transform.rotation);
             camera = joystickCam;
-
         }
         else
         {
-            //UnityEngine.Debug.Log("WrongOne");
             camera = occCam;
         }
-        //GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
         float roll = camera.transform.rotation.eulerAngles.z;
         while (roll > 180)
         {
             roll = roll - 360;
-
         }
         while (roll < -180)
         {
             roll = roll + 360;
-
         }
         float pitch = camera.transform.rotation.eulerAngles.x;
         while (pitch > 180)
         {
             pitch = pitch - 360;
-
         }
         while (pitch < -180)
         {
             pitch = pitch + 360;
-
         }
         float yaw = camera.transform.rotation.eulerAngles.y;
         while (yaw > 180)
         {
             yaw = yaw - 360;
-
         }
         while (yaw < -180)
         {
             yaw = yaw + 360;
-
         }
-        //soundSource = Random.
-        //sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
         return new Vector3(yaw, -1 * pitch, -1 * roll);
     }
     public static Vector3 getObjectOrientation(GameObject g)
     {
         GameObject camera;
-        
         camera = g;
-        //GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
         float roll = camera.transform.rotation.eulerAngles.z;
         while (roll > 180)
         {
             roll = roll - 360;
-
         }
         while (roll < -180)
         {
             roll = roll + 360;
-
         }
         float pitch = camera.transform.rotation.eulerAngles.x;
         while (pitch > 180)
         {
             pitch = pitch - 360;
-
         }
         while (pitch < -180)
         {
             pitch = pitch + 360;
-
         }
         float yaw = camera.transform.rotation.eulerAngles.y;
         while (yaw > 180)
         {
             yaw = yaw - 360;
-
         }
         while (yaw < -180)
         {
             yaw = yaw + 360;
-
         }
-        //soundSource = Random.
-        //sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
         return new Vector3(yaw, -1 * pitch, -1 * roll);
     }
     public void AddSourceInformation(SourceInformation SI) {
@@ -644,7 +575,6 @@ public class SLABCommunication : MonoBehaviour
             {
                 byte[] messageBytes = Encoding.ASCII.GetBytes(message);
                 slabUDPConnection.Send(messageBytes, messageBytes.Length);
-                //UnityEngine.Debug.Log("we");
                 return "0";
             }
             string sendMessage = message + (char)3;
@@ -663,22 +593,12 @@ public class SLABCommunication : MonoBehaviour
         }
         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer) {
             string sendMessage = message + (char)3;
-            //UnityEngine.Debug.Log(sendMessage);
-            //byte[] data = System.Text.Encoding.ASCII.GetBytes(sendMessage);
-            //UnityEngine.Debug.Log(data.ToString());
             StreamWriter s = new StreamWriter(slabStream);
             s.Write(sendMessage);
             s.Flush();
-            //slabStream.Write(data, 0, data.Length);
-            //slabStream.Flush();
-
-
             string response = string.Empty;
-            //data = new byte[256];
             StreamReader r = new StreamReader(slabStream);
             response = r.ReadLine();
-            //int bytes = slabStream.Read(data, 0, data.Length);
-            //response = "";// System.Text.Encoding.ASCII.GetString(data, 0, 1);
             return response;
 
         }

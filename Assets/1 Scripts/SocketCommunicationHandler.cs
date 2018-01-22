@@ -16,10 +16,8 @@ public class SocketCommunicationHandler : MonoBehaviour
 {
 	
 	Socket serverSocket;
-	//UdpClient listener = new UdpClient();
 	List<Socket> clients = new List<Socket>();
 	List<Thread> clientThreads = new List<Thread>();
-	//bool clientConnected = false;
 	List<MessageContainer> clientMessages = new List<MessageContainer>();
 	Object messageListLock = new Object();
 	private string messageMatchingExpression = "(.+)\\((.*)\\)";
@@ -40,16 +38,12 @@ public class SocketCommunicationHandler : MonoBehaviour
 	// Use this for initialization
 	void Awake()
 	{
-        //UnityEngine.Debug.Log("jdjdj");
-		messageListLock = new Object();
+    	messageListLock = new Object();
 		clientMessages = new List<MessageContainer>();
 		mainThread = new Thread(WaitForConnections);
 		mainThread.Start();
         currentEngine = ConfigurationUtil.engineType;
-        
-        //Thread monitor = new Thread(() => MonitorThreads());
-		//UnityEngine.Debug.Log(stimulusPlayer);
-	}
+    }
 
 	// Update is called once per frame
 	void Update()
@@ -64,9 +58,7 @@ public class SocketCommunicationHandler : MonoBehaviour
 				clientMessages.RemoveAt(0);
 				empty = false;
 			}
-
-
-		}
+    	}
         if (clientDisconnect)
         {
             clientDisconnect = false;
@@ -77,11 +69,7 @@ public class SocketCommunicationHandler : MonoBehaviour
 			return;
 		else
 			ProcessMessage(messageC);
-
-
-
-
-
+        
 	}
 	private void WaitForConnections()
 	{
@@ -94,21 +82,12 @@ public class SocketCommunicationHandler : MonoBehaviour
 
 		while (true)
 		{
-			//Debug.Log("wait for client");
-
-			//byte[] data = listener.Receive(ref groupEP);
-
-			//string dataString = Encoding.ASCII.GetString(data,0,data.Length);
-
+			
 			Socket tempSock = serverSocket.Accept();
 			clients.Add(tempSock);
-
-			//Debug.Log(dataString);
-            
-			Thread t = new Thread(() => ReadClientSocket(tempSock));
+            Thread t = new Thread(() => ReadClientSocket(tempSock));
 			clientThreads.Add(t);
 			t.Start();
-
             Thread tConnectMonitor = new Thread(() => DisconnectMonitor(tempSock));
             clientThreads.Add(tConnectMonitor);
             tConnectMonitor.Start();
@@ -143,68 +122,47 @@ public class SocketCommunicationHandler : MonoBehaviour
                 UnityEngine.Debug.Log("Reset Called");
             
             }
-            
-
-        
-        
-        
         
         }
-    
-    
     }
 
-	private void ReadClientSocket(Socket s)
-	{
-		NetworkStream n = new NetworkStream(s);
-        //MessageContainer mC;//= new MessageContainer();
+    private void ReadClientSocket(Socket s)
+    {
+        NetworkStream n = new NetworkStream(s);
 
         UnityEngine.Debug.Log("Added a new client");
         using (StreamReader reader = new StreamReader(n, Encoding.UTF8))
-		{
-           
-			while (s.Connected)
-			{
-				//UnityEngine.Debug.Log("Waiting for message");
-				//UnityEngine.Debug.Log(incomingMessage);
-				string incomingMessage = reader.ReadLine();
-				
+        {
+
+            while (s.Connected)
+            {
+                string incomingMessage = reader.ReadLine();
+
                 if (incomingMessage == null)
                     break;
-				lock (messageListLock)
-				{
-					//Debug.Log(incomingMessage);
-        		    clientMessages.Add(new MessageContainer(s, incomingMessage));
+                lock (messageListLock)
+                {
+                    clientMessages.Add(new MessageContainer(s, incomingMessage));
 
-				}
-                
-			}
-            
-		}
+                }
+
+            }
+
+        }
         UnityEngine.Debug.Log("falling out of thread");
-        //clientDisconnect = true;
-        //gameObject.GetComponent<SLABCommunication>().Reset();
-
-
-
-	}
+    }
     private void DisconnectMonitor(Socket s)
     {
         while (s.Connected)
         {
             Thread.Sleep(300);
         }
-
-       
-        //UnityEngine.Debug.Log("falling out of thread");
         clientDisconnect = true;
-        //gameObject.GetComponent<SLABCommunication>().Reset();
     }
     private void ProcessMessage(MessageContainer mC)
 	{
 		Match match = Regex.Match(mC.message, messageMatchingExpression);
-        
-
+     
         if (match.Success)
         {
             if (ConfigurationUtil.isDebug)
@@ -377,8 +335,6 @@ public class SocketCommunicationHandler : MonoBehaviour
                 case "addaudiosource":
 
                     paramList = match.Groups[2].Value.Trim().Split(',');
-                    //allocwavesrc
-                    //Get position information in FLT
                     x = paramList[1].Trim('[');
                     y = paramList[2];
                     z = paramList[3].Trim(']');
@@ -614,8 +570,6 @@ public class SocketCommunicationHandler : MonoBehaviour
                                 else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
                                 {
                                     linkedReply = SLABCommunication.sendMessageToSlab("allocLinkedSrc " + sourceID + "," + otherSources + "," + sourceHRTFID + ",0");
-                                    //linkedReply = SLABCommunication.sendMessageToSlab("allocAsioSrc " + sourceHRTFID + ",0");
-                                    //linkedReply = SLABCommunication.sendMessageToSlab("allocLinkedSrc 1," + sourceHRTFID + ",0");
                                     replyCheck = linkedReply.Trim().Trim(';').Split(',');
                                     if (int.TryParse(replyCheck[replyCheckIndex], out replyCode))
                                     {
@@ -692,7 +646,6 @@ public class SocketCommunicationHandler : MonoBehaviour
                             renderingAttempts++;
                             slabResponse = SLABCommunication.sendMessageToSlab("isRendering");
                             Thread.Sleep(1000);
-                            //break;
                         }
                         while (slabResponse.Trim().Trim(';').Split(':')[1].Trim().Equals("0") || renderingAttempts >=10);
                         if (renderingAttempts >= 10) {
@@ -760,9 +713,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         reply = SLABCommunication.sendMessageToSlab("setSrcGain" + paramList[0] + "," + paramList[1] + "");
                         reply = reply.Trim().Trim(';');
                     }
-
-
-                     reply = "adjustSourceLevel," + reply.Trim().Split(',')[1].TrimStart();
+                    reply = "adjustSourceLevel," + reply.Trim().Split(',')[1].TrimStart();
                     break;
                 case "adjustoveralllevel":
                     paramList = match.Groups[2].Value.Trim().Split(',');
@@ -934,8 +885,6 @@ public class SocketCommunicationHandler : MonoBehaviour
                         {
                             reply = "showfreecursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_BOOLPARSEFAILURE;
                         }
-
-
                     }
                     else
                     {
@@ -977,18 +926,15 @@ public class SocketCommunicationHandler : MonoBehaviour
                         }
                         else if (paramList[1].ToLower().Equals("f"))
                         {
-
                             GetComponent<SLABCommunication>().TurnOffSnappedCursor();
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hand;
-
                         }
                         else
                         {
                             reply = "showsnappedcursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_BOOLPARSEFAILURE;
                         }
-
-
+                        
                     }
                     else
                     {
@@ -1206,7 +1152,6 @@ public class SocketCommunicationHandler : MonoBehaviour
                         adjustSourceReply = adjustSourceReply.Trim().Trim(';');
                     }
                     replyCheck = adjustSourceReply.Split(',');
-                    //UnityEngine.Debug.Log(adjustSourceReply);
                     reply = "adjustSourcePosition,";
                     if (int.TryParse(replyCheck[1], out replyCode))
                     {
@@ -1512,12 +1457,10 @@ public class SocketCommunicationHandler : MonoBehaviour
 
 		mainThread.Abort();
 		serverSocket.Close();
-
-
-
+        
 	}
 	
-
+    // Keeps the message plus the socket for reply
     public class MessageContainer
     {
         public MessageContainer(Socket fromSocket, string incomingMessage)
