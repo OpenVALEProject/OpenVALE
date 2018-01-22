@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Xml.XPath;
 
@@ -21,9 +22,35 @@ public class LevelLoader : MonoBehaviour
         if (nn == null) return;
 
         bool status = nn.MoveToFirstChild();
+        string s, t;
+
+        while (status) {
+            if (nn.MoveToFirstAttribute())
+            {
+                s = nn.Value;
+                nn.MoveToParent();
+                t = nn.Value;
+                switch (s)
+                {
+                    case ("SpatialAudioServerRootDir"):
+                        ConfigurationUtil.spatialAudioServer = t.Trim().Replace('/', '\\');
+                        XPathNavigator rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        break;
+
+                }
 
 
 
+
+            }
+            else
+                status = false;
+            status = nn.MoveToNext();
+
+
+        }
+        SceneManager.LoadScene(defaultLevel);
+        /*
         foreach (string line in filedata)
 		{
 			string[] options = line.Split(':');
@@ -180,9 +207,10 @@ public class LevelLoader : MonoBehaviour
 
 			}
 		}
+        */
 
-		Application.LoadLevel(defaultLevel);
-	}
+
+    }
 
 	// Update is called once per frame
 	void Update()

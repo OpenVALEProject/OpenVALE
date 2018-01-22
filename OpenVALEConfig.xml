@@ -2,8 +2,7 @@
 <configuration>
   <applicationSettings>
 	<setting name="SpatialAudioServerRootDir" serializeAs="string">
-			<UseSpatialAudioServer>1</UseSpatialAudioServer>
-			<value>D:\Development\SLAB</value>
+			<value>D:/Development/Spatial Audio Server/Server/bin/Release</value>
 		</setting>
   </applicationSettings>
 </configuration>

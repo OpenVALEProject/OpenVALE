@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 using System.IO;
+using System.Text;
 using System.Xml.XPath;
 
 public class SLABCommunication : MonoBehaviour
@@ -34,7 +35,7 @@ public class SLABCommunication : MonoBehaviour
     public GameObject cameraTransform;
     public GameObject joystickCam;
     public GameObject occCam;
-
+    private string spatialAudioServerDirectory = ConfigurationUtil.spatialAudioServer;
 
 	//private string response;
 
@@ -48,15 +49,17 @@ public class SLABCommunication : MonoBehaviour
 
 
 		}
+        UnityEngine.Debug.Log(spatialAudioServerDirectory + "\\AudioServer3.exe");
         slabProcess = new Process();
-		slabProcess.StartInfo.FileName = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\AudioServer3.exe";
-        slabProcess.StartInfo.WorkingDirectory = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\";
+        slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\AudioServer3.exe";
+        //slabProcess.StartInfo.FileName = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\AudioServer3.exe";
+        slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
 
 
 		//UnityEngine.Debug.Log("Should have waited longer?");
 		slabProcess.Start();
 
-		Thread.Sleep(2000);
+		Thread.Sleep(500);
         while (true)
         {
             try
@@ -79,7 +82,7 @@ public class SLABCommunication : MonoBehaviour
 
 		slabStream = slabConnection.GetStream();
         
-		Thread.Sleep(2000);
+		//Thread.Sleep(2000);
 
 		//string r;
 		sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
@@ -123,74 +126,7 @@ public class SLABCommunication : MonoBehaviour
 	void Update()
     {
         //UnityEngine.Debug.Log(getListenerOrientation());
-		if (Application.loadedLevelName.Contains("ALFaaaaaaaaaaaaaaaaaaa"))
-		{
-			if (triggerFeedback && feedbackFinished)
-			{
-				feedbackFinished = false;
-				StartCoroutine("giveFeedback");
 
-
-
-			}
-
-			if (init)
-			{
-
-                /*
-				//positions = gameObject.GetComponent("WorldMaker");
-				WorldMaker w = gameObject.GetComponent<WorldMaker>();
-				soundSourceList = w.sphereLocations;
-				//GameObject source = GameObject.FindGameObjectWithTag("SoundSource");
-				UnityEngine.Debug.Log(soundSourceList.Count);
-				soundSource = soundSourceList[272]; //soundSourceList[chooser.Next(soundSourceList.Count)];
-				//float slabX = source.transform.localPosition.z; 
-				//float slabY = source.transform.localPosition.x;
-				//float slabZ = source.transform.localPosition.y;
-
-				float slabX = soundSource.transform.position.z;
-				float slabY = -soundSource.transform.position.x;
-				float slabZ = soundSource.transform.position.y;
-				Renderer re = soundSource.GetComponent<Renderer>();
-				re.material.color = new Color(1.0f, 0.0f, 0.0f);
-				sendMessageToSlab("presentSource(1," + slabX + "," + slabY + "," + slabZ + ")");
-				sendMessageToSlab("muteSource(1,0)");
-				init = false;
-                */
-			}
-
-			if (Time.time > nextSound && feedbackFinished)
-			{
-
-				nextSound = Time.time + soundDelay;
-				if (mute)
-				{
-					//sendMessageToSlab("muteSource(1,1)");
-					//soundSource = soundSourceList[chooser.Next(soundSourceList.Count)];
-					//float slabX = source.transform.localPosition.z; 
-					//float slabY = source.transform.localPosition.x;
-					//float slabZ = source.transform.localPosition.y;
-					//float slabX = soundSource.transform.position.z;
-					//float slabY = soundSource.transform.position.x;
-					//float slabZ = soundSource.transform.position.y;
-
-					//sendMessageToSlab("presentSource(1," + slabX + "," + slabY + "," + slabZ + ")");
-
-
-				}
-				else
-				{
-					//ypos = ypos * -1;
-
-
-					//sendMessageToSlab("muteSource(1,0)");
-				}
-
-				mute = !mute;
-
-			}
-
-		}
         GameObject camera;
         if (!ConfigurationUtil.useRift)
         {
@@ -243,107 +179,7 @@ public class SLABCommunication : MonoBehaviour
 
 	}
 
-	/*
-	void Update()
-	{
-		if (triggerFeedback)
-		{
 
-
-		}
-
-		if (init)
-		{
-
-
-			//positions = gameObject.GetComponent("WorldMaker");
-			WorldMaker w = gameObject.GetComponent<WorldMaker>();
-			soundSourceList = w.sphereLocations;
-			//GameObject source = GameObject.FindGameObjectWithTag("SoundSource");
-			soundSource = soundSourceList[chooser.Next(soundSourceList.Count)];
-			//float slabX = source.transform.localPosition.z; 
-			//float slabY = source.transform.localPosition.x;
-			//float slabZ = source.transform.localPosition.y;
-
-			float slabX = soundSource.transform.position.z;
-			float slabY = soundSource.transform.position.x;
-			float slabZ = soundSource.transform.position.y;
-
-			sendMessageToSlab("presentSource(1," + slabX + "," + slabY + "," + slabZ + ")");
-
-			init = false;
-		}
-
-
-		if (Time.time > nextSound)
-		{
-
-			nextSound = Time.time + soundDelay;
-			if (mute)
-			{
-				sendMessageToSlab("muteSource(1,1)");
-				soundSource = soundSourceList[chooser.Next(soundSourceList.Count)];
-				//float slabX = source.transform.localPosition.z; 
-				//float slabY = source.transform.localPosition.x;
-				//float slabZ = source.transform.localPosition.y;
-				float slabX = soundSource.transform.position.z;
-				float slabY = soundSource.transform.position.x;
-				float slabZ = soundSource.transform.position.y;
-
-				sendMessageToSlab("presentSource(1," + slabX + "," + slabY + "," + slabZ + ")");
-
-
-			}
-			else
-			{
-				//ypos = ypos * -1;
-
-				GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
-				float roll = camera.transform.localEulerAngles.z;
-				while (roll > 180)
-				{
-					roll = roll - 360;
-
-				}
-				while (roll < -180)
-				{
-					roll = roll + 360;
-
-				}
-				float pitch = camera.transform.localEulerAngles.x;
-				while (pitch > 180)
-				{
-					pitch = pitch - 360;
-
-				}
-				while (pitch < -180)
-				{
-					pitch = pitch + 360;
-
-				}
-				float yaw = camera.transform.localEulerAngles.y;
-				while (yaw > 180)
-				{
-					yaw = yaw - 360;
-
-				}
-				while (yaw < -180)
-				{
-					yaw = yaw + 360;
-
-				}
-				//soundSource = Random.
-				sendMessageToSlab("setListenerPosition(" + yaw + "," + pitch + "," + roll + ")");
-				sendMessageToSlab("muteSource(1,0)");
-			}
-			mute = !mute;
-
-		}
-
-
-
-	}
-	 * */
 	IEnumerator giveFeedback()
 	{
 		sendMessageToSlab("muteSource(1,1)");
@@ -485,22 +321,15 @@ public class SLABCommunication : MonoBehaviour
 	public static string sendMessageToSlab(string message)
 	{
 		string sendMessage = message + (char)3;
-		//UnityEngine.Debug.Log(sendMessage);
-		//byte[] data = System.Text.Encoding.ASCII.GetBytes(sendMessage);
-		//UnityEngine.Debug.Log(data.ToString());
 		StreamWriter s = new StreamWriter(slabStream);
 		s.Write(sendMessage);
 		s.Flush();
-		//slabStream.Write(data, 0, data.Length);
-		//slabStream.Flush();
-
 
 		string response = string.Empty;
-		//data = new byte[256];
 		StreamReader r = new StreamReader(slabStream);
-		response = r.ReadLine();
-		//int bytes = slabStream.Read(data, 0, data.Length);
-		//response = "";// System.Text.Encoding.ASCII.GetString(data, 0, 1);
+        char[] buff = new char[256];
+		r.Read(buff,0,256);
+        response = new string(buff);
 		return response;
 
 	}
