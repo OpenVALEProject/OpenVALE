@@ -6,6 +6,7 @@ Table of Contents
 2. Configuration Settings
 3. Command List
 4. Error Codes
+5. Known Issues
 
 User Guide
 
@@ -25,9 +26,16 @@ v. DemoServer
 
 	
 	To test whether OpenVALE is working, run the demo script included (Matlab and Python 			formats).
-
+	
 	All coordinate values for position should be passed and returned as Front,Left,Top (FLT).  			Positive forward,left,up.
 
+	The connection port for commands is 43201.
+	
+	If the user presses the escape button, a “quit” string will be sent out to all connections on 43202.
+		The escapes buttons are:
+			Rift – B
+			Vive – Application Menu
+			None - q
 
 Configuration Settings
 
@@ -64,6 +72,7 @@ Configuration Settings
 		HMDType 
 			- Possible values "Rift", “Vive”, or "None"
 If blank will default to Rift
+Use “None” for keyboard controls.  WASD to rotate and Spacebar to respond.
 
 Command List
 
@@ -96,7 +105,7 @@ Pre-render
 	
 	err = getSubjectNumber
 		- displays a number panel for entering subject numbers.
-- Subject number entered must be 4 digits
+- Subject number entered must be 1-4 digits
 - Client expected to choose input method (ie Crosshair)
 - Example: getSubjectNumber()
 
@@ -211,3 +220,6 @@ Error Codes
         14 = Failed to initialize location
         15 = Failed to start render
 
+Known Issues
+
+	- Using “None” for HMDType with HMD connected will prevent use of controller.
