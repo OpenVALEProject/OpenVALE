@@ -419,7 +419,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         string fname = paramList[5].Split('=')[1];
                         if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
                         {
-                            reply = SLABCommunication.sendMessageToSlab("allocWaveSrc " + fname + "," + sourceHRTFID + ",1,0");
+                            reply = SLABCommunication.sendMessageToSlab("allocWaveSrc " + fname + "," + sourceHRTFID + ",0,0");
                             reply = reply.Trim().Trim(';');
                         }
                         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
