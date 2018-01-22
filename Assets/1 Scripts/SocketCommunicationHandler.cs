@@ -701,7 +701,15 @@ public class SocketCommunicationHandler : MonoBehaviour
                     reply = "reset,0";
                     break;
                 case "definefront":
-                    UnityEngine.VR.InputTracking.Recenter();
+                    UnityEngine.Debug.Log("define front");
+                    if (ConfigurationUtil.useRift)
+                    {
+                        UnityEngine.XR.InputTracking.Recenter();
+                    }
+                    else if (ConfigurationUtil.useVive) {
+                        GameObject.FindGameObjectWithTag("CameraOffset").transform.position = Vector3.zero;
+                        GameObject.FindGameObjectWithTag("CameraOffset").transform.position = -1* UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                    }
                     reply = "definefront,0";
                     break;
                 case "adjustsourcelevel":
@@ -979,12 +987,20 @@ public class SocketCommunicationHandler : MonoBehaviour
                             reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
                             break;
                         }
-                        target = new Vector3(xF, yF, zF);
+                        target = HelperFunctions.FLTToUnityXYZ(new Vector3(xF, yF, zF));
                         if (!float.TryParse(paramList[3], out tol))
                         {
                             reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_PARAMETEROUTOFRANGE;
                             break;
 
+                        }
+                        if (paramList.Length > 4 && paramList[4].ToLower().Equals("t"))
+                        {
+                            ConfigurationUtil.waitingForResponse = true;
+                        }
+                        else
+                        {
+                            ConfigurationUtil.waitingForResponse = false;
                         }
                     }
                     else if (int.TryParse(paramList[0], out speakerID))
@@ -997,12 +1013,22 @@ public class SocketCommunicationHandler : MonoBehaviour
                             break;
 
                         }
+                        if (paramList.Length > 2 && paramList[2].ToLower().Equals("t"))
+                        {
+                            ConfigurationUtil.waitingForResponse = true;
+                        }
+                        else
+                        {
+                            ConfigurationUtil.waitingForResponse = false;
+                        }
                     }
                     else
                     {
                         reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_CMDSYN;
                     }
                     ConfigurationUtil.waitingClient = mC.sender;
+                    //ConfigurationUtil.waitingForResponse = true;
+                    ConfigurationUtil.waitStartTime = Time.time;
                     ConfigurationUtil.recenterPosition = target;
                     ConfigurationUtil.recenterTolerance = tol;
                     reply = "";
@@ -1013,7 +1039,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     Vector3 orientationHead = Vector3.zero;
                     if (ConfigurationUtil.useRift)
                     {
-                        orientationHead = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye).eulerAngles;
+                        orientationHead = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye).eulerAngles;
                     }
                     else
                     {
@@ -1026,8 +1052,8 @@ public class SocketCommunicationHandler : MonoBehaviour
                     Vector3 orientation6DOF = Vector3.zero;
                     if (ConfigurationUtil.useRift)
                     {
-                        position6DOF = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye);
-                        orientation6DOF = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye).eulerAngles;
+                        position6DOF = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                        orientation6DOF = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye).eulerAngles;
                     }
                     else
                     {
@@ -1063,8 +1089,8 @@ public class SocketCommunicationHandler : MonoBehaviour
                         reply = "getNearestSpeaker," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
                         break;
                     }
-                    reply = "getNearestSpeaker," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + GetComponent<ALFLeds>().getNearestSpeakerID(HelperFunctions.FLTToUnityXYZ(new Vector3(xFl, yFl, zFl)));
-
+                    GameObject nearSpeaker = GetComponent<ALFLeds>().getNearestSpeaker(HelperFunctions.FLTToUnityXYZ(new Vector3(xFl, yFl, zFl)));
+                    reply = "getNearestSpeaker," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + GetComponent<ALFLeds>().getNearestSpeakerID(HelperFunctions.FLTToUnityXYZ(new Vector3(xFl, yFl, zFl)))+"," + Vector3.Distance(nearSpeaker.transform.position, new Vector3(xFl, yFl, zFl));
                     break;
                 case "getspeakerposition":
                     paramList = match.Groups[2].Value.Trim().Split(',');
@@ -1114,7 +1140,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     else if (int.TryParse(paramList[1], out speakerID))
                     {
 
-                        newSourcePosition = GetComponent<ALFLeds>().getSpeakerByID(paramList[0]).transform.position;
+                        newSourcePosition = GetComponent<ALFLeds>().getSpeakerByID(paramList[1]).transform.position;
                         newSourcePosition = HelperFunctions.UnityXYZToFLT(newSourcePosition);
 
                     }
@@ -1152,7 +1178,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         adjustSourceReply = adjustSourceReply.Trim().Trim(';');
                     }
                     replyCheck = adjustSourceReply.Split(',');
-                    reply = "adjustSourcePosition,";
+                    reply = "adjustSourcePosition";
                     if (int.TryParse(replyCheck[1], out replyCode))
                     {
                         if (replyCode == 0)

@@ -99,7 +99,7 @@ public class GuessWho : MonoBehaviour
             else
             {
                 //Ray r = new Ray(mainCamera.transform.position, crossHair.transform.position - mainCamera.transform.position);
-                Ray r = new Ray(UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye), crossHair.transform.position - UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye));
+                Ray r = new Ray(UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye), crossHair.transform.position - UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye));
                 RaycastHit[] hits = Physics.RaycastAll(r, 5);
                 float elapsedTime = Time.time - trialStartTime;
                 message += elapsedTime + ",";                

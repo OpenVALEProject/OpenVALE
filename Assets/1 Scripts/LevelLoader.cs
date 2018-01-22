@@ -81,8 +81,10 @@ public class LevelLoader : MonoBehaviour
                     case ("HMDType"):
                         string hmdTypeCheck = t.Trim().Replace('/', '\\');
 
-                        if (!hmdTypeCheck.Equals("None"))
+                        if (hmdTypeCheck.Equals("Rift"))
                             ConfigurationUtil.useRift = true;
+                        else if (hmdTypeCheck.Equals("Vive"))
+                            ConfigurationUtil.useVive = true;
 
                         rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
                         break;

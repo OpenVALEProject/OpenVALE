@@ -27,7 +27,6 @@ public class SLABCommunication : MonoBehaviour
 	private GameObject soundSource;
 	private List<GameObject> soundSourceList;
 	private bool init = true;
-	private System.Random chooser = new System.Random();
 	public bool triggerFeedback = false;
 	private bool feedbackFinished = true;
 	private static string HRTFDir = ConfigurationUtil.HRTFDir;
@@ -47,6 +46,8 @@ public class SLABCommunication : MonoBehaviour
     public float crossHairDepth;
     public GameObject panelBase;
     public static Dictionary<int, SourceInformation> currentSources = new Dictionary<int, SourceInformation>();
+    private bool enteredTolerance = false;
+    private float toleranceTime = 0.0f;
 
 	// Use this for initialization
 	void Start()
@@ -144,6 +145,12 @@ public class SLABCommunication : MonoBehaviour
         }
         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3) {
             string slabResponse = "";
+            slabResponse = sendMessageToSlab("isRendering");
+            if (slabResponse.Trim().Trim(';').Split(':')[1].Trim().Equals("0")) {
+                return;
+
+
+            }
             sendMessageToSlab("Stop");
             do
             {
@@ -222,7 +229,7 @@ public class SLABCommunication : MonoBehaviour
         sendMessageToSlab("setWavePath(" + wavDir + ")");
         sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
         currentSources = new Dictionary<int, SourceInformation>();
-
+        
     }
     // Update is called once per frame
     void Update()
@@ -306,7 +313,8 @@ public class SLABCommunication : MonoBehaviour
         }
         else
         {
-            Vector3 orientationVector = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.Head).eulerAngles;
+            Vector3 orientationVector = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.Head).eulerAngles;
+           
             roll = orientationVector.z;
             while (roll > 180)
             {
@@ -341,7 +349,7 @@ public class SLABCommunication : MonoBehaviour
 
             }
         }
-        Vector3 cameraPosition = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.Head);
+        Vector3 cameraPosition = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.Head);
         if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
         {
             sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
@@ -375,14 +383,32 @@ public class SLABCommunication : MonoBehaviour
                 // Vector3 camerPosition = camera.transform.position;
                 // Vector3 cameraForward = camera.transform.forward;
 
-                crossHair.transform.position = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye);
-               crossHair.transform.position = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth;
-                crossHair.transform.LookAt(crossHair.transform.position + UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.forward, UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.up);
+                
+                if (ConfigurationUtil.useRift)
+                {
+                    crossHair.transform.position = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                    crossHair.transform.position = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth;
+                    
+                }
+                else if (ConfigurationUtil.useVive)
+                {
+                    crossHair.transform.position = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                    crossHair.transform.position = crossHair.transform.position + ((SteamVR_Controller.Input(3).transform.rot * Vector3.forward).normalized * crossHairDepth);
+                }
+                crossHair.transform.LookAt(crossHair.transform.position + (UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward), UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.up);
                 crossHair.transform.Rotate(Vector3.right, -90);
+           
             }
             else if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
             {
-                Vector3 intersectionLocation = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
+                Vector3 intersectionLocation = Vector3.zero;
+                if (ConfigurationUtil.useRift)
+                {
+                    intersectionLocation = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
+                }
+                if (ConfigurationUtil.useVive) {
+                    intersectionLocation = (SteamVR_Controller.Input(3).transform.rot * Vector3.forward).normalized * 2.08f;
+                }
                 currentHighlightedObject = GetComponent<ALFLeds>().getNearestSpeaker(intersectionLocation);
                 if (currentHighlightedObject != null)
                 {
@@ -415,11 +441,53 @@ public class SLABCommunication : MonoBehaviour
 
         }
         if (ConfigurationUtil.waitingForRecenter) {
-            Vector3 targetAlignment = (ConfigurationUtil.recenterPosition - camera.transform.forward).normalized;
+            Vector3 targetAlignment = (ConfigurationUtil.recenterPosition - camera.transform.position).normalized;
+            UnityEngine.Debug.Log(camera.transform.forward);
             if (Mathf.Acos(Vector3.Dot(camera.transform.forward, targetAlignment)) < ConfigurationUtil.recenterTolerance)
             {
                 
-                string message = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                if (!enteredTolerance)
+                {
+                    enteredTolerance = true;
+                    toleranceTime = Time.time;
+                    //UnityEngine.Debug.Log("*/ in!");
+                }
+                if (ConfigurationUtil.waitingForResponse)
+                {
+                    if (ConfigurationUtil.useRift && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger))
+                    {
+                        ConfigurationUtil.waitingForResponse = false;
+                    }
+                    else if (ConfigurationUtil.useVive && SteamVR_Controller.Input(3).GetPressDown(SteamVR_Controller.ButtonMask.Trigger))
+                    {
+                        ConfigurationUtil.waitingForResponse = false;
+                    }
+                    else if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive && Input.GetKeyDown(KeyCode.Space))
+                    {
+                        ConfigurationUtil.waitingForResponse = false;
+                    }
+                    else
+                        return;
+
+                }
+                else {
+                    if ((Time.time - toleranceTime) > 0.5f)
+                    {
+                        enteredTolerance = false;
+                        if (Mathf.Acos(Vector3.Dot(camera.transform.forward, targetAlignment)) > ConfigurationUtil.recenterTolerance)
+                        {
+                            return;
+                        }
+                       
+                    }
+                    else {
+
+                        return;
+                    }
+                    
+                }
+                    
+                string message = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ","+ (Time.time - ConfigurationUtil.waitStartTime);
                 GetComponent<SocketCommunicationHandler>().sendMessage(message, ConfigurationUtil.waitingClient);
                 ConfigurationUtil.waitingForRecenter = false;
                 ConfigurationUtil.recenterTolerance = 0;
@@ -427,12 +495,21 @@ public class SLABCommunication : MonoBehaviour
                 ConfigurationUtil.waitingClient = null;
             }
 
+            return;
+
 
         }
+        
+
+        
         if (ConfigurationUtil.useRift && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger)){
             TriggerPressed();
         }
-        else if (!ConfigurationUtil.useRift &&Input.GetKeyDown(KeyCode.Space)) {
+        else if (ConfigurationUtil.useVive && SteamVR_Controller.Input(3).GetPressDown(SteamVR_Controller.ButtonMask.Trigger))
+        {            
+            TriggerPressed();
+        }
+        else if (!ConfigurationUtil.useRift && !ConfigurationUtil.useVive &&Input.GetKeyDown(KeyCode.Space)) {
             TriggerPressed();
         }
         
@@ -448,16 +525,24 @@ public class SLABCommunication : MonoBehaviour
                 if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand)
                 {
                     if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
-                        intersectionPoint = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
+                    {
+                        if (ConfigurationUtil.useRift)
+                        {
+                            intersectionPoint = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
+                        }
+                        else if (ConfigurationUtil.useVive) {
+                            intersectionPoint = (SteamVR_Controller.Input(3).transform.rot * Vector3.forward).normalized * 2.08f;
+                        }
+                    }
                     else
-                        intersectionPoint = (crossHair.transform.position - UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye)).normalized * 2.08f;
+                        intersectionPoint = (crossHair.transform.position - UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye)).normalized * 2.08f;
                 }
                 else if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hmd)
                 {
                     if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
-                        intersectionPoint = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.forward * 2.08f;
+                        intersectionPoint = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward * 2.08f;
                     else
-                        intersectionPoint = (crossHair.transform.position - UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye)).normalized * 2.08f;
+                        intersectionPoint = (crossHair.transform.position - UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye)).normalized * 2.08f;
                 }
             }
             else

@@ -33,7 +33,7 @@ public class UIRotator : MonoBehaviour {
             }
         }
         //rotator.transform.position = new Vector3(mainCamera.transform.position.x, 0.18f, mainCamera.transform.position.z);
-        rotator.transform.position = new Vector3(UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye).x, .18f, UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye).z);
+        rotator.transform.position = new Vector3(UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye).x, .18f, UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye).z);
         //if (mainCamera.transform.rotation.eulerAngles.y > transform.rotation.eulerAngles.y + 10)
        // {
         rotator.transform.rotation = Quaternion.Euler(0, 0, 0);
