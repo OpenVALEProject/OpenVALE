@@ -48,15 +48,15 @@ public class SLABCommunication : MonoBehaviour
 	void Awake()
 	{
 
-		foreach (var process in Process.GetProcessesByName("AudioServer3 (32 bit)"))
+		foreach (var process in Process.GetProcessesByName("WinAudioServer"))
 		{
 			process.Kill();
 
 
 		}
-        UnityEngine.Debug.Log(spatialAudioServerDirectory + "\\AudioServer3.exe");
+        UnityEngine.Debug.Log(spatialAudioServerDirectory + "\\WinAudioServer.exe");
         slabProcess = new Process();
-        slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\AudioServer3.exe";
+        slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\WinAudioServer.exe";
         //slabProcess.StartInfo.FileName = "D:\\Development\\Spatial Audio Server\\Server\\bin\\Release\\AudioServer3.exe";
         slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
 
@@ -89,20 +89,20 @@ public class SLABCommunication : MonoBehaviour
 		slabStream = slabConnection.GetStream();
         
 
-        //Thread.Sleep(2000);
+        Thread.Sleep(2000);
 
         //string r;
-        //sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
+        sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
         //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
-        //sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
-        //sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
+        sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
+        sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
         //if (!outDevice.Equals(""))
         //{
         //    UnityEngine.Debug.Log("ASIO");
         //    sendMessageToSlab("selectOutDevice(" + outDevice + ")");
         //}
-        //sendMessageToSlab("setWavePath(" + wavDir + ")");
-        //sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
+        sendMessageToSlab("setWavePath(" + wavDir + ")");
+        sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
 
     }
     public void Reset() {
@@ -359,9 +359,6 @@ public class SLABCommunication : MonoBehaviour
         //soundSource = Random.
         //sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
         return new Vector3(yaw, -1 * pitch, -1 * roll);
-        
-    
-    
     }
     public static Vector3 getObjectOrientation(GameObject g)
     {
@@ -405,39 +402,58 @@ public class SLABCommunication : MonoBehaviour
         //soundSource = Random.
         //sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
         return new Vector3(yaw, -1 * pitch, -1 * roll);
-
-
-
     }
 
     public static string sendMessageToSlab(string message, bool isUDP = false)
-	{
-        if (isUDP) {
-            byte[] messageBytes = Encoding.ASCII.GetBytes(message);
-            slabUDPConnection.Send(messageBytes, messageBytes.Length);
-            //UnityEngine.Debug.Log("we");
-            return "0";
+	{   if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+        {
+            if (isUDP)
+            {
+                byte[] messageBytes = Encoding.ASCII.GetBytes(message);
+                slabUDPConnection.Send(messageBytes, messageBytes.Length);
+                //UnityEngine.Debug.Log("we");
+                return "0";
+            }
+            string sendMessage = message + (char)3;
+            StreamWriter s = new StreamWriter(slabStream);
+            s.Write(sendMessage);
+            s.Flush();
+
+            string response = string.Empty;
+            StreamReader r = new StreamReader(slabStream);
+            char[] buff = new char[256];
+            r.Read(buff, 0, 256);
+
+            response = new string(buff);
+            response = response.Replace(((char)0x00).ToString(), string.Empty);
+            return response;
         }
-		string sendMessage = message + (char)3;
-		StreamWriter s = new StreamWriter(slabStream);
-		s.Write(sendMessage);
-		s.Flush();
+        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer) {
+            string sendMessage = message + (char)3;
+            //UnityEngine.Debug.Log(sendMessage);
+            //byte[] data = System.Text.Encoding.ASCII.GetBytes(sendMessage);
+            //UnityEngine.Debug.Log(data.ToString());
+            StreamWriter s = new StreamWriter(slabStream);
+            s.Write(sendMessage);
+            s.Flush();
+            //slabStream.Write(data, 0, data.Length);
+            //slabStream.Flush();
 
-		string response = string.Empty;
-		StreamReader r = new StreamReader(slabStream);
-        char[] buff = new char[256];
-		r.Read(buff,0,256);
-        
-        response = new string(buff);
-        response = response.Replace(((char)0x00).ToString(), string.Empty);
-		return response;
 
+            string response = string.Empty;
+            //data = new byte[256];
+            StreamReader r = new StreamReader(slabStream);
+            response = r.ReadLine();
+            //int bytes = slabStream.Read(data, 0, data.Length);
+            //response = "";// System.Text.Encoding.ASCII.GetString(data, 0, 1);
+            return response;
+
+        }
+        return "";
 	}
 	IEnumerator wait(float sec)
 	{
-
 		yield return new WaitForSeconds(sec);
-
 	}
     public void TurnOffCursor() {
         crossHair.SetActive(false);
@@ -446,8 +462,4 @@ public class SLABCommunication : MonoBehaviour
         currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(false, false, false, false);
         currentHighlightedObject = null;
     }
-
-
-
-
 }

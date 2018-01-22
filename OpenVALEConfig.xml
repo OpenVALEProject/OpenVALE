@@ -2,7 +2,7 @@
 <configuration>
   <applicationSettings>
 	<setting name="SpatialAudioServerRootDir" serializeAs="string">
-			<value>D:/Development/Spatial Audio Server/Server/bin/Release</value>
+			<value>D:/VirtualAudio/SlabServer</value>
 		</setting>
   </applicationSettings>
 </configuration>

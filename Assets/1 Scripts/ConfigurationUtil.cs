@@ -5,6 +5,7 @@ using System.Net.Sockets;
 public static class ConfigurationUtil  {
     public enum CursorAttachment{none,hand, hmd};
     public enum CursorType { none, crosshair, snapped};
+    public enum AudioEngineType {SLABServer,AudioServer3}
 
 	public static string HRTFDir = "..\\..\\VirtualAudio\\HRTFs";
 	//public static string HRTFName = "s81HT_FG_HD280_E100.slh";
@@ -31,6 +32,7 @@ public static class ConfigurationUtil  {
     public static bool waitingForRecenter = false;
     public static Vector3 recenterPosition = Vector3.zero;
     public static float recenterTolerance = 0;
+    public static AudioEngineType engineType = AudioEngineType.SLABServer;
 
 
 }

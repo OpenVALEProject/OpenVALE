@@ -221,15 +221,72 @@ public class SocketCommunicationHandler : MonoBehaviour
 			float slabX;
 			float slabY;
 			float slabZ;
+            float xF = 0;
+            float yF = 0;
+            float zF = 0;
 
-			Renderer re;
+            Renderer re;
 			Material[] mats;
+            string[] replyCheck;
+            int replyCode = 0;
 
 
-			GameObject soundObject;
+            GameObject soundObject;
             switch (match.Groups[1].Value.Trim().ToLower())
             {
+                case "loadhrtf":
+                    reply = SLABCommunication.sendMessageToSlab(mC.message);
+                    replyCheck = reply.Split(',');
+                    
+                    if (int.TryParse(replyCheck[1], out replyCode))
+                    {
+                        if (replyCode > 0)
+                            reply = "loadHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + replyCode;
+                        else
+                            reply = "loadHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
 
+                    }
+                    else {
+                        reply = "loadHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_HRTFFILELOADFAILURE;
+                    }
+
+                    break;
+                case "setsourcehrtf":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    int srcID;
+                    int hrtfID;
+
+                    if (!int.TryParse(paramList[0], out srcID))
+                    {
+                        reply = "setSourceHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SRCIDMUSTBEINTEGER;
+                        break;
+                    }
+                    if (!int.TryParse(paramList[1], out hrtfID))
+                    {
+                        reply = "setSourceHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_HRTFIDMUSTBEINTEGER;
+                        break;
+                    }
+                    if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer) {
+                        reply = SLABCommunication.sendMessageToSlab("switchHRTF(" + srcID + "," + hrtfID + ")");
+                        replyCheck = reply.Split(',');
+
+                        if (int.TryParse(replyCheck[1], out replyCode))
+                        {
+                            if (replyCode == 0)
+                            {
+                                reply = "setSourceHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                            }
+                            else
+                            {
+                                reply = "setSourceHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
+                                break;
+                            }
+                        }
+                        else {
+                            reply = "setSourceHRTF," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
+                        }
+                    }
+                    break;
                 case "sethrtf":
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     int sourceNumber;
@@ -275,33 +332,113 @@ public class SocketCommunicationHandler : MonoBehaviour
                     x = paramList[1].Trim('[');
                     y = paramList[2];
                     z = paramList[3].Trim(']');
+                    xF = 0;
+                    yF = 0;
+                    zF = 0;
+                    int sourceHRTFID;
+                    if (!int.TryParse(paramList[4], out sourceHRTFID))
+                    {
+                        reply = "addAudioSource," + ERRORMESSAGES.ErrorType.ERR_AS_HRTFIDMUSTBEINTEGER;
+                    }
+                    if (!float.TryParse(x, out xF))
+                    {
+                        reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                        break;
+                    }
+                    if (!float.TryParse(y, out yF))
+                    {
+                        reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                        break;
+                    }
+                    if (!float.TryParse(z, out zF))
+                    {
+                        reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
+                        break;
+                    }
+                    Vector3 FLTLocation = HelperFunctions.UnityXYZToFLT(new Vector3(xF, yF, zF));
                     // Allocate a wav source
                     if (paramList[0].ToLower().Equals("wav")) {
                         reply = SLABCommunication.sendMessageToSlab("allocWaveSrc " + paramList[4] + "");
-                        UnityEngine.Debug.Log(reply);
+                        
                     }
                     // Allocate Generator Source
                     if (paramList[0].ToLower().Equals("noisegen"))
                     {
-                        reply = SLABCommunication.sendMessageToSlab("allocSigGenSrc N,1.0,1000,0,1");
+                        if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                        {
+                            reply = SLABCommunication.sendMessageToSlab("allocSigGenSrc N,1.0,1000,0,1");
+                        }
+                        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer) {
+                            reply = SLABCommunication.sendMessageToSlab("allocSigGenSource");
+                        }
                         UnityEngine.Debug.Log(reply);
                     }
                     // Allocate ASIO Source
                     if (paramList[0].ToLower().Equals("asio"))
                     {
-                        reply = SLABCommunication.sendMessageToSlab("allocAsioSrc()");
+                        int numberOfChannels;
+                        
+
+                        if (int.TryParse(paramList[5], out numberOfChannels))
+                        {
+
+                            if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                            {
+                                reply = SLABCommunication.sendMessageToSlab("allocAsioSrc()");
+                                string[] replySplit = reply.Trim().Split(',');
+                                // Check success 
+                                if (replySplit[1].Trim().Equals("0"))
+                                {
+                                    //reply = SLABCommunication.sendMessageToSlab("enableSrc " + replySplit[2].Trim().Trim(';') + ",1");
+                                    //SLABCommunication.sendMessageToSlab("updateSrcXYZ(" + replySplit[2].Trim().Trim(';') + "," + x + "," + y + "," + z + ")");
+                                    reply = "addaudiosource," + replySplit[2].Trim().Trim(';');
+                                }
+                                else
+                                {
+                                    reply = "addaudiosource,0";
+                                }
+                            }
+                            else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
+                            {
+                                reply = SLABCommunication.sendMessageToSlab("allocateASIOSource(" + sourceHRTFID + "," + numberOfChannels + ")");
+                                replyCheck = reply.Split(',');
+
+                                if (int.TryParse(replyCheck[1], out replyCode))
+                                {
+                                    if (replyCode > 0)
+                                    {
+                                        reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + replyCode;
+                                       
+                                    }
+                                    else
+                                    {
+                                        reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_PARAMETEROUTOFRANGE;
+                            break;
+                        }
+                        
                     }
-                    string[] replySplit = reply.Trim().Split(',');
-                    // Check success 
-                    if (replySplit[1].Trim().Equals("0"))
-                    {
-                        //reply = SLABCommunication.sendMessageToSlab("enableSrc " + replySplit[2].Trim().Trim(';') + ",1");
-                        //SLABCommunication.sendMessageToSlab("updateSrcXYZ(" + replySplit[2].Trim().Trim(';') + "," + x + "," + y + "," + z + ")");
-                        reply = "addaudiosource," + replySplit[2].Trim().Trim(';');
+                    string presentReply = SLABCommunication.sendMessageToSlab("presentSource(" + replyCode + "," + FLTLocation.x + "," + FLTLocation.y + "," + FLTLocation.z);
+                    replyCheck = presentReply.Split(',');
+
+                    if (int.TryParse(replyCheck[1], out replyCode)) {
+                        if (replyCode != 0) {
+                            reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDINITIALIZELOCATION;
+                        }
                     }
-                    else {
-                        reply = "addaudiosource,0";
-                    }
+
                     break;
                 case "enablesrc":
                     //enablesrc
@@ -318,15 +455,42 @@ public class SocketCommunicationHandler : MonoBehaviour
                     break;
                 case "startrendering":
                     //start
-                    reply = SLABCommunication.sendMessageToSlab("start");
+                    if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                    {
+                        reply = SLABCommunication.sendMessageToSlab("start");
+                        if (reply.Trim().Split(',')[1].Trim().Equals("0;"))
+                        {
+                            gameObject.GetComponent<SLABCommunication>().isRendering = true;
+
+                        }
+                    }
+                    else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                    {
+                        reply = SLABCommunication.sendMessageToSlab("startRendering(0,0)");
+
+                        replyCheck = reply.Split(',');
+
+                        if (int.TryParse(replyCheck[1], out replyCode))
+                        {
+                            if (replyCode == 0)
+                            {
+                                reply = "startRendering," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                            }
+                            else
+                            {
+                                reply = "startRendering," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            reply = "startRendering," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
+                            break;
+                        }
+                    }
 
                     File.WriteAllText(".\\logtext.txt", reply.Trim().Split(',')[1].Trim());
-                    if (reply.Trim().Split(',')[1].Trim().Equals("0;"))
-                    {
-                        gameObject.GetComponent<SLABCommunication>().isRendering = true;
-
-                    }
-                    reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
+                                        
                     /*
                     reply = SLABCommunication.sendMessageToSlab(mC.message);
                     foreach (string key in sourcesToInitOnRender.Keys)
@@ -373,11 +537,30 @@ public class SocketCommunicationHandler : MonoBehaviour
 
 
                     if (paramList[1].ToLower().Equals("t"))
-                        reply = SLABCommunication.sendMessageToSlab("muteSrc " + paramList[0] + ",1");
+                    {
+                        if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                        {
+                            reply = SLABCommunication.sendMessageToSlab("muteSrc " + paramList[0] + ",1");
+                        }
+                        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
+                        {
+                            reply = SLABCommunication.sendMessageToSlab("muteSource" + paramList[0] + ",1");
+                        }
+
+                    }
                     else if (paramList[1].ToLower().Equals("f"))
-                        reply = SLABCommunication.sendMessageToSlab("muteSrc " + paramList[0] + ",0");
+                    {
+                        if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                        {
+                            reply = SLABCommunication.sendMessageToSlab("muteSrc " + paramList[0] + ",0");
+                        }
+                        else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
+                        {
+                            reply = SLABCommunication.sendMessageToSlab("muteSource" + paramList[0] + ",0");
+                        }
+                    }
                     else
-                        reply = "-1";
+                        reply = "muteAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_CMDSYN;
                     break;
                 //mutesrc
                 case "setleds":
@@ -394,9 +577,9 @@ public class SocketCommunicationHandler : MonoBehaviour
                         z = paramList[2].Trim(']');
 
 
-                        float xF = 0;
-                        float yF = 0;
-                        float zF = 0;
+                        xF = 0;
+                        yF = 0;
+                        zF = 0;
                         if (!float.TryParse(x, out xF))
                         {
                             reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
@@ -581,9 +764,9 @@ public class SocketCommunicationHandler : MonoBehaviour
                         x = paramList[0].Trim('[');
                         y = paramList[1];
                         z = paramList[2].Trim(']');
-                        float xF = 0;
-                        float yF = 0;
-                        float zF = 0;
+                        xF = 0;
+                        yF = 0;
+                        zF = 0;
                         if (!float.TryParse(x, out xF))
                         {
                             reply = "waitForRecenter," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
@@ -686,9 +869,9 @@ public class SocketCommunicationHandler : MonoBehaviour
                             x = paramList[0].Trim('[');
                             y = paramList[1];
                             z = paramList[2].Trim(']');
-                            float xF = 0;
-                            float yF = 0;
-                            float zF = 0;
+                            xF = 0;
+                            yF = 0;
+                            zF = 0;
                             if (!float.TryParse(x, out xF))
                             {
                                 reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
