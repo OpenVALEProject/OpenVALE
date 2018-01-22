@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ALFLeds : MonoBehaviour {
     public GameObject speakerPrefab;
@@ -9,6 +10,9 @@ public class ALFLeds : MonoBehaviour {
     //List<Vector3> speakerLocation = new List<Vector3>();
 
     void Start () {
+        if (!SceneManager.GetActiveScene().name.ToLower().Equals("openvale")) {
+            return;
+        }
         //speakers.Add("1",new LEDControls//speakerLocation.Add(2.08f * new Vector3(0, 0, 0));
         speakers.Add("1", Instantiate(speakerPrefab));
         speakers["1"].GetComponent<LEDControls>().Move(0.183951, -0.982935, 0.000000);

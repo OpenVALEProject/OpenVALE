@@ -35,6 +35,7 @@ public class SocketCommunicationHandler : MonoBehaviour
     public string responseToSend = "";
     public GameObject Highlighter;
     private ConfigurationUtil.AudioEngineType currentEngine;
+    public UIRotator UIDisplay;
 
 	// Use this for initialization
 	void Awake()
@@ -349,7 +350,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_XYZPARSEFAILURE;
                         break;
                     }
-                    Vector3 FLTLocation = HelperFunctions.UnityXYZToFLT(new Vector3(xF, yF, zF));
+                    Vector3 FLTLocation = new Vector3(xF, yF, zF);
                     // Allocate a wav source
                     if (paramList[0].ToLower().Equals("wav")) {
                         string fname = paramList[5].Split('=')[1];
@@ -380,6 +381,11 @@ public class SocketCommunicationHandler : MonoBehaviour
                         {
                             reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
                         }
+                        SourceInformation newSource = new SourceInformation();
+                        newSource.sourceID = replyCode;
+                        newSource.hrtfID = sourceHRTFID;
+                        newSource.FLTPosition = FLTLocation;
+                        GetComponent<SLABCommunication>().AddSourceInformation(newSource);
 
                     }
                     // Allocate Generator Source
@@ -411,12 +417,16 @@ public class SocketCommunicationHandler : MonoBehaviour
                         {
                             reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
                         }
+                        SourceInformation newSource = new SourceInformation();
+                        newSource.sourceID = replyCode;
+                        newSource.hrtfID = sourceHRTFID;
+                        newSource.FLTPosition = FLTLocation;
+                        GetComponent<SLABCommunication>().AddSourceInformation(newSource);
                     }
                     // Allocate ASIO Source
                     if (paramList[0].ToLower().Equals("asio"))
                     {
                         int numberOfChannels;
-                        
 
                         if (int.TryParse(paramList[5], out numberOfChannels))
                         {
@@ -439,6 +449,10 @@ public class SocketCommunicationHandler : MonoBehaviour
                             }
                             else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
                             {
+                                // number fo channels is number of sources for the asio device
+                                // reply becomes source 1
+                                // call allocatelinkedsource(which source, whichChannel, which hrtf)
+                                // whichChannel is 
                                 reply = SLABCommunication.sendMessageToSlab("allocateASIOSource(" + sourceHRTFID + "," + numberOfChannels + ")");
                                 replyCheck = reply.Split(',');
 
@@ -447,19 +461,58 @@ public class SocketCommunicationHandler : MonoBehaviour
                                     if (replyCode > 0)
                                     {
                                         reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + "," + replyCode;
-                                       
+
                                     }
                                     else
                                     {
                                         reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
+                                        
                                         break;
                                     }
                                 }
                                 else
                                 {
                                     reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
+                                   
                                     break;
                                 }
+                                SourceInformation newSource = new SourceInformation();
+                                newSource.sourceID = replyCode;
+                                newSource.hrtfID = sourceHRTFID;
+                                newSource.FLTPosition = FLTLocation;
+                                GetComponent<SLABCommunication>().AddSourceInformation(newSource);
+                                int sourceID = replyCode;
+                                for (int otherSources = 1; otherSources < numberOfChannels; otherSources++)
+                                {
+                                    string linkedReply;
+                                    linkedReply = SLABCommunication.sendMessageToSlab("allocateLinkedSource(" + sourceID + "," + otherSources+ "," + sourceHRTFID+ ")");
+                                    replyCheck = linkedReply.Split(',');
+
+                                    if (int.TryParse(replyCheck[1], out replyCode))
+                                    {
+                                        if (replyCode > 0)
+                                        {
+                                            reply += ("," + replyCode);
+
+                                        }
+                                        else
+                                        {
+                                            reply = "allocateLinkedSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SLABERRORCODE + "," + replyCode;
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        reply = "allocateLinkedSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDTOPARSESLABRESPONSE;
+                                        break;
+                                    }
+                                    SourceInformation newLinkedSource = new SourceInformation();
+                                    newLinkedSource.sourceID = replyCode;
+                                    newLinkedSource.hrtfID = sourceHRTFID;
+                                    newLinkedSource.FLTPosition = FLTLocation;
+                                    GetComponent<SLABCommunication>().AddSourceInformation(newLinkedSource);
+                                }
+                                
                             }
                         }
                         else
@@ -469,10 +522,11 @@ public class SocketCommunicationHandler : MonoBehaviour
                         }
                         
                     }
+                    sourcesToInitOnRender.Add(replyCode.ToString(),FLTLocation);
+                    //string presentReply = SLABCommunication.sendMessageToSlab("presentSource(" + replyCode + "," + FLTLocation.x + "," + FLTLocation.y + "," + FLTLocation.z+ ")");
+                    //replyCheck = presentReply.Split(',');
+                    //SLABCommunication.sendMessageToSlab("muteSource(1,0)");
                     /*
-                    string presentReply = SLABCommunication.sendMessageToSlab("presentSource(" + replyCode + "," + FLTLocation.x + "," + FLTLocation.y + "," + FLTLocation.z);
-                    replyCheck = presentReply.Split(',');
-
                     if (int.TryParse(replyCheck[1], out replyCode)) {
                         if (replyCode != 0) {
                             reply = "addAudioSource," + (int)ERRORMESSAGES.ErrorType.ERR_AS_FAILEDINITIALIZELOCATION;
@@ -540,8 +594,13 @@ public class SocketCommunicationHandler : MonoBehaviour
                         }
                         
                     }
-                    SLABCommunication.sendMessageToSlab("presentSource(1,0,10,0)");
-                    SLABCommunication.sendMessageToSlab("muteSource(1,0)");
+                    Vector3 positionValue;
+                    foreach (string s in sourcesToInitOnRender.Keys)
+                    {
+                        positionValue = sourcesToInitOnRender[s];
+                        SLABCommunication.sendMessageToSlab("presentSource(" + s + "," + positionValue.x+"," + positionValue.y + "," + positionValue.z + ")");
+                    }
+                    //SLABCommunication.sendMessageToSlab("muteSource(1,0)");
                     //File.WriteAllText(".\\logtext.txt", reply.Trim().Split(',')[1].Trim());
 
                     /*
@@ -561,15 +620,14 @@ public class SocketCommunicationHandler : MonoBehaviour
                 case "reset":
                     //exit and restart
                     gameObject.GetComponent<SLABCommunication>().Reset();
-                    reply = "1";
+                    reply = "reset,0";
                     break;
                 case "definefront":
                     UnityEngine.VR.InputTracking.Recenter();
-                    reply = "1";
+                    reply = "definefront,0";
                     break;
                 case "adjustsourcelevel":
                     //adjsrcgain
-
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     reply = SLABCommunication.sendMessageToSlab("adjsrcgain " + paramList[0] + "," + paramList[1] + " ");
                     reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
@@ -582,7 +640,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                     x = paramList[1].Trim('[');
                     y = paramList[2];
                     z = paramList[3].Trim(']');
-                    reply = SLABCommunication.sendMessageToSlab("updateSrcXYZ " + paramList[0].Trim().Trim(';') + "," + x + "," + y + "," + z + "");
+                    reply = SLABCommunication.sendMessageToSlab("presentSrcXYZ " + paramList[0].Trim().Trim(';') + "," + x + "," + y + "," + z + "");
                     reply = reply.Trim().Split(',')[0].Trim() + "," + reply.Trim().Split(',')[1].TrimStart();
                     break;
                 case "muteaudiosource":
@@ -597,7 +655,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         }
                         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
                         {
-                            reply = SLABCommunication.sendMessageToSlab("muteSource" + paramList[0] + ",1");
+                            reply = SLABCommunication.sendMessageToSlab("muteSource(" + paramList[0] + ",1)");
                         }
 
                     }
@@ -609,7 +667,7 @@ public class SocketCommunicationHandler : MonoBehaviour
                         }
                         else if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
                         {
-                            reply = SLABCommunication.sendMessageToSlab("muteSource" + paramList[0] + ",0");
+                            reply = SLABCommunication.sendMessageToSlab("muteSource(" + paramList[0] + ",0)");
                         }
                     }
                     else
@@ -979,11 +1037,18 @@ public class SocketCommunicationHandler : MonoBehaviour
                         reply = "highlightLocation," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
                         
                     }
-
-
                     break;
                 case "displaymessage":
-                  
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    if (paramList.Length > 0)
+                    {
+                        UIDisplay.setMessage(paramList[0]);
+                    }
+                    else
+                    {
+                        UIDisplay.hideMessage();
+                    }
+                    break;
                 case"useWand":
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     if (paramList[0].ToUpper().Equals("T"))
@@ -1176,7 +1241,7 @@ public class SocketCommunicationHandler : MonoBehaviour
 					slabY = -pos.x;
 					slabZ = pos.y;
 
-					message = "updateSource(" + paramList[0].Trim() +
+					message = "presentSource(" + paramList[0].Trim() +
 						"," + slabX +"," + slabY +	"," + slabZ + ")";
 						//pos = new Vector3(float.Parse(y) * -1, float.Parse(z), float.Parse(x));
 					soundObject = WorldVariables.GetSLABObbject(paramList[0].Trim());
@@ -1384,19 +1449,152 @@ public class SocketCommunicationHandler : MonoBehaviour
                     //n.Close();
 
                     break;
-				default:
+                case "guesswho":
+                   
+                    GuessWho componentGuessWho = GetComponent<GuessWho>();
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    GuessWho.TrialType tType = GuessWho.TrialType.LOCALIZE_LAST_VOICE;
+                    int trialINT = 0;
+                    if (int.TryParse(paramList[0], out trialINT))
+                    {
+                        switch (trialINT) {
+                            case 4:
+                                tType = GuessWho.TrialType.LOCALIZE_LAST_VOICE;
+                                break;
+                            case 2:
+                                tType = GuessWho.TrialType.LOCALIZE_BY_ID;
+                                break;
+                            case 1:
+                                tType = GuessWho.TrialType.ID_BY_LOCATION;
+                                break;
+                            case 3:
+                                tType = GuessWho.TrialType.ID_LAST_VOICE;
+                                break;
+                            case 5:
+                                tType = GuessWho.TrialType.ALL_FINISHED;
+                                break;
+                            case 0:
+                                tType = GuessWho.TrialType.STARTUP_TRIAL;
+                                break;
+                            default:
+                                reply = "GuessWho," + (int)GuessWho.ErrorMessage.UNKNOWN_TRIAL_TYPE + "," + trialINT;
+                                break;
+                        }
+                        componentGuessWho.trialType = tType;
+                    }
+                    else {
+                        reply = "GuessWho," + (int)GuessWho.ErrorMessage.UNKNOWN_TRIAL_TYPE + "," + paramList[0];
+                        break;
+                    }
+                    if (paramList[1].ToLower().Equals("t"))
+                    {
+                        componentGuessWho.giveFeedback = true;
+                    }
+                    else if (paramList[1].ToLower().Equals("f")) {
+                        componentGuessWho.giveFeedback = false;
+                    }
+                    else {
+                        reply = "GuessWho," + (int)GuessWho.ErrorMessage.UNKNOWN_FEEDBACK_TYPE + "," + paramList[1];
+                        break;
+                    }
+                    int correctFace;
+                    if (paramList[2].Contains("["))
+                    {
+                        x = paramList[2].Trim('[');
+                        y = paramList[3];
+                        z = paramList[4].Trim(']');
+                        xF = 0;
+                        yF = 0;
+                        zF = 0;
+                        if (!float.TryParse(x, out xF))
+                        {
+                            reply = "GuessWho," + (int)GuessWho.ErrorMessage.UNKNOWN_POSITION_VALUE + "," + x;
+                            break;
+                        }
+                        if (!float.TryParse(y, out yF))
+                        {
+                            reply = "GuessWho," + (int)GuessWho.ErrorMessage.UNKNOWN_POSITION_VALUE + "," + y;
+                            break;
+                        }
+                        if (!float.TryParse(z, out zF))
+                        {
+                            reply = "GuessWho," + (int)GuessWho.ErrorMessage.UNKNOWN_POSITION_VALUE + "," + z;
+                            break;
+                        }
+
+                        componentGuessWho.correctPosition = HelperFunctions.FLTToUnityXYZ(new Vector3(xF, yF, zF));
+                        componentGuessWho.DisplayMessage(tType);
+
+                    }
+                    else
+                    {
+                        reply = "GuessWho," + (int)GuessWho.ErrorMessage.UNKNOWN_CORRECT_VALUE + "," + paramList[2];
+                        break;
+                    }
+                    if (int.TryParse(paramList[5], out correctFace))
+                    {
+                        componentGuessWho.correctFacenumber = correctFace;
+
+                    }
+                    else
+                    {
+                        reply = "GuessWho," + (int)GuessWho.ErrorMessage.UNKNOWN_CORRECT_VALUE + "," + paramList[5];
+                        break;
+                    }
+
+                    if (tType == GuessWho.TrialType.STARTUP_TRIAL)
+                    {
+                        componentGuessWho.DisplayMessage(GuessWho.TrialType.STARTUP_TRIAL);
+                        reply = "";
+
+                    }
+                    if (tType == GuessWho.TrialType.ID_BY_LOCATION) {
+                        componentGuessWho.DisplayMessage(GuessWho.TrialType.ID_BY_LOCATION);
+                        componentGuessWho.SetCenterFace(-1);
+                        componentGuessWho.SetHighlightedOrb(componentGuessWho.correctPosition);
+                        
+                    }
+                    if (tType == GuessWho.TrialType.ID_LAST_VOICE)
+                    {
+                        componentGuessWho.DisplayMessage(GuessWho.TrialType.ID_LAST_VOICE);
+                        componentGuessWho.SetCenterFace(-1);
+                        componentGuessWho.SetHighlightedOrb(Vector3.zero);
+
+                    }
+                    if (tType == GuessWho.TrialType.LOCALIZE_BY_ID)
+                    {
+                        componentGuessWho.DisplayMessage(GuessWho.TrialType.LOCALIZE_BY_ID);
+                        componentGuessWho.SetCenterFace(componentGuessWho.correctFacenumber);
+                        componentGuessWho.SetHighlightedOrb(Vector3.zero);
+
+                    }
+                    if (tType == GuessWho.TrialType.LOCALIZE_LAST_VOICE)
+                    {
+                        componentGuessWho.DisplayMessage(GuessWho.TrialType.LOCALIZE_LAST_VOICE);
+                        componentGuessWho.SetCenterFace(-1);
+                        componentGuessWho.SetHighlightedOrb(Vector3.zero);
+                    }
+                    if (tType != GuessWho.TrialType.ALL_FINISHED)
+                    {
+                        componentGuessWho.trialStartTime = Time.time;
+                        componentGuessWho.isWaitingForResponse = true;
+                        componentGuessWho.waitingClient = mC.sender;
+                        reply = "";
+                    }
+                    else {
+                        componentGuessWho.DisplayMessage(GuessWho.TrialType.ALL_FINISHED);
+                        componentGuessWho.isWaitingForResponse = false;
+                        gameObject.GetComponent<SLABCommunication>().Reset();
+                        reply = "GuessWho,0,Complete";
+                    }
+                    
+                    break;
+                default:
 					if (ConfigurationUtil.isDebug)
 						LogSystem.Log("Unable to process command" + match.Groups[0].Value);
 					reply = match.Groups[1].Value.Trim().ToLower() + "," + (int)ERRORMESSAGES.ErrorType.ERR_AS_CMDNOTRECOGNIZED;
-
-
-					break;
-
-
-
-
-
-
+                    break;
+                    
 			}
 			if (!reply.Equals(""))
 			{

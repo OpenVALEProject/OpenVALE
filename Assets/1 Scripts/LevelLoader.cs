@@ -7,10 +7,10 @@ public class LevelLoader : MonoBehaviour
 {
 
 	// Use this for initialization
-	public string defaultLevel = "OpenVALE";
+	private string defaultLevel = ConfigurationUtil.levelName;
     
 
-	void Awake()
+    void Awake()
 	{
         LogSystem.ClearLog();
 	    Application.runInBackground = true;
@@ -20,23 +20,51 @@ public class LevelLoader : MonoBehaviour
         XPathNavigator nav = config.CreateNavigator();
         XPathNavigator nn = nav.SelectSingleNode("/configuration/applicationSettings");
         if (nn == null) return;
-
+      
         bool status = nn.MoveToFirstChild();
         string s, t;
-
+        XPathNavigator rndrc = null;
         while (status) {
+            
             if (nn.MoveToFirstAttribute())
             {
                 s = nn.Value;
                 nn.MoveToParent();
                 t = nn.Value;
+                
                 switch (s)
                 {
                     case ("SpatialAudioServerRootDir"):
                         ConfigurationUtil.spatialAudioServer = t.Trim().Replace('/', '\\');
-                        XPathNavigator rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
                         break;
-
+                    case ("ASIOOutputChannels"):
+                        ConfigurationUtil.channelMap = t.Trim().Replace('/', '\\');
+                        rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        break;
+                    case ("ASIOInputChannels"):
+                        ConfigurationUtil.outChannelMap = t.Trim().Replace('/', '\\');
+                        rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        break;
+                    case ("HRTFDirectory"):
+                        ConfigurationUtil.HRTFDir = t.Trim().Replace('/', '\\');
+                        rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        break;
+                    case ("WavDirectory"):
+                        ConfigurationUtil.wavDir= t.Trim().Replace('/', '\\');
+                        rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        break;
+                    case ("OutDeviceParams"):
+                        ConfigurationUtil.IODevice = t.Trim().Replace('/', '\\');
+                        rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        break;
+                    case ("LevelName"):
+                        string levelNameCheck = t.Trim().Replace('/', '\\');
+                        Debug.Log("levelNameCheck " + levelNameCheck);
+                        if (!levelNameCheck.Equals(""))
+                            defaultLevel= levelNameCheck;
+                        rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
+                        break;
                 }
 
 
@@ -50,6 +78,7 @@ public class LevelLoader : MonoBehaviour
 
         }
         ConfigurationUtil.useRift = false;
+        Debug.Log(defaultLevel);
         SceneManager.LoadScene(defaultLevel);
         /*
         foreach (string line in filedata)

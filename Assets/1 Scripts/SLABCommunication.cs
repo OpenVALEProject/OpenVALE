@@ -10,6 +10,7 @@ using System.Xml.XPath;
 
 public class SLABCommunication : MonoBehaviour
 {
+    
 	public int port = 1112;
 	private TcpClient slabConnection;
     private static UdpClient slabUDPConnection;
@@ -42,6 +43,8 @@ public class SLABCommunication : MonoBehaviour
     private GameObject currentHighlightedObject = null;
     public GameObject crossHair;
     public float crossHairDepth;
+    public GameObject panelBase;
+    private Dictionary<int, SourceInformation> currentSources = new Dictionary<int, SourceInformation>();
 	//private string response;
 
 	// Use this for initialization
@@ -96,17 +99,27 @@ public class SLABCommunication : MonoBehaviour
         //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
         sendMessageToSlab("defineASIOOutChMap(" + channelMap + " )");
         sendMessageToSlab("defineASIOChMap(" + outChannelMap + ")");
-        //if (!outDevice.Equals(""))
-        //{
-        //    UnityEngine.Debug.Log("ASIO");
-        //    sendMessageToSlab("selectOutDevice(" + outDevice + ")");
-        //}
+        if (!outDevice.Equals(""))
+        {
+            UnityEngine.Debug.Log("ASIO");
+            sendMessageToSlab("selectOutDevice(" + outDevice + ")");
+        }
         sendMessageToSlab("setWavePath(" + wavDir + ")");
         sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
 
     }
     public void Reset() {
-     
+        UnityEngine.Debug.Log("INSIDE RESET");
+        //string r;
+
+        sendMessageToSlab("freeSources()");
+        Thread.Sleep(500);
+
+        sendMessageToSlab("setHRTFPath(" + HRTFDir + ")");
+        //sendMessageToSlab("loadHRTF(" + HRTFName + ")");
+        sendMessageToSlab("setWavePath(" + wavDir + ")");
+        sendMessageToSlab("setFIRTaps(" + FIRTaps + ")");
+        soundSourceList.Clear();
     }
 
 	// Update is called once per frame
@@ -123,11 +136,16 @@ public class SLABCommunication : MonoBehaviour
             #endif
         }
         GameObject camera;
+        float yaw;
+        float pitch;
+        float roll;
+        camera = joystickCam;
         if (!ConfigurationUtil.useRift)
         {
             //UnityEngine.Debug.Log(joystickCam.transform.rotation);
-            camera = joystickCam;
-            if (Input.GetKey(KeyCode.A)) {
+            
+            if (Input.GetKey(KeyCode.A))
+            {
                 camera.transform.Rotate(Vector3.up, -.1f);
             }
             else if (Input.GetKey(KeyCode.D))
@@ -145,46 +163,94 @@ public class SLABCommunication : MonoBehaviour
 
             }
 
+            //GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
+            roll = camera.transform.rotation.eulerAngles.z;
+            while (roll > 180)
+            {
+                roll = roll - 360;
+
+            }
+            while (roll < -180)
+            {
+                roll = roll + 360;
+
+            }
+            pitch = camera.transform.rotation.eulerAngles.x;
+            while (pitch > 180)
+            {
+                pitch = pitch - 360;
+
+            }
+            while (pitch < -180)
+            {
+                pitch = pitch + 360;
+
+            }
+            yaw = camera.transform.rotation.eulerAngles.y;
+            while (yaw > 180)
+            {
+                yaw = yaw - 360;
+
+            }
+            while (yaw < -180)
+            {
+                yaw = yaw + 360;
+
+            }
+
+            sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
+
         }
         else
         {
             //UnityEngine.Debug.Log("WrongOne");
-            camera = occCam;
+
+
+            //GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
+            Vector3 orientationVector = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.Head).eulerAngles;
+            roll = orientationVector.z;//eulerAngles.z;
+            while (roll > 180)
+            {
+                roll = roll - 360;
+
+            }
+            while (roll < -180)
+            {
+                roll = roll + 360;
+
+            }
+            pitch = orientationVector.x;
+            while (pitch > 180)
+            {
+                pitch = pitch - 360;
+
+            }
+            while (pitch < -180)
+            {
+                pitch = pitch + 360;
+
+            }
+            yaw = orientationVector.y;
+            while (yaw > 180)
+            {
+                yaw = yaw - 360;
+
+            }
+            while (yaw < -180)
+            {
+                yaw = yaw + 360;
+
+            }
         }
-		//GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
-        float roll = camera.transform.rotation.eulerAngles.z;
-		while (roll > 180)
-		{
-			roll = roll - 360;
 
-		}
-		while (roll < -180)
-		{
-			roll = roll + 360;
+        sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
+        Vector3 cameraPosition = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.Head);
+        Vector3 relativePosition = Vector3.zero;
+        foreach (SourceInformation S in currentSources.Values) {
+            relativePosition = S.FLTPosition - HelperFunctions.UnityXYZToFLT(cameraPosition);
+            sendMessageToSlab("updateSource(" + S.sourceID + "," + relativePosition.x + "," + relativePosition.y + "," + relativePosition.z);
+        }
 
-		}
-        float pitch = camera.transform.rotation.eulerAngles.x;
-		while (pitch > 180)
-		{
-			pitch = pitch - 360;
-
-		}
-		while (pitch < -180)
-		{
-			pitch = pitch + 360;
-
-		}
-        float yaw = camera.transform.rotation.eulerAngles.y;
-		while (yaw > 180)
-		{
-			yaw = yaw - 360;
-
-		}
-		while (yaw < -180)
-		{
-			yaw = yaw + 360;
-
-		}
         if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.none && ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.none) {
             return;
         }
@@ -196,7 +262,31 @@ public class SLABCommunication : MonoBehaviour
 
         if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand) {
 
+            if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.crosshair)
+            {
+                if (!crossHair.activeSelf)
+                {
+                    crossHair.SetActive(true);
+                }
 
+                // Vector3 camerPosition = camera.transform.position;
+                // Vector3 cameraForward = camera.transform.forward;
+
+                crossHair.transform.position = UnityEngine.VR.InputTracking.GetLocalPosition(UnityEngine.VR.VRNode.CenterEye);
+                //Debug.Log(OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch));
+                crossHair.transform.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch) + (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * crossHairDepth ;
+                crossHair.transform.LookAt(crossHair.transform.position + UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.forward, UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye) * Vector3.up);
+                crossHair.transform.Rotate(Vector3.right, -90);
+            }
+            else if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
+            {
+                Vector3 intersectionLocation = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
+                currentHighlightedObject = GetComponent<ALFLeds>().getNearestSpeaker(intersectionLocation);
+                if (currentHighlightedObject != null)
+                {
+                    currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(true, true, true, true);
+                }
+            }
         }
    
         if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hmd) {
@@ -205,6 +295,7 @@ public class SLABCommunication : MonoBehaviour
                 if (!crossHair.activeSelf) {
                     crossHair.SetActive(true);
                 }
+                
                 crossHair.transform.position = camera.transform.position;
                 crossHair.transform.position = transform.position + camera.transform.forward * crossHairDepth;
                 crossHair.transform.LookAt(crossHair.transform.position + camera.transform.rotation * Vector3.forward, camera.transform.rotation * Vector3.up);
@@ -403,7 +494,11 @@ public class SLABCommunication : MonoBehaviour
         //sendMessageToSlab("setListenerPosition(" + yaw + "," + -1 * pitch + "," + -1 * roll + ")");
         return new Vector3(yaw, -1 * pitch, -1 * roll);
     }
+    public void AddSourceInformation(SourceInformation SI) {
+        UnityEngine.Debug.Log("Source information ID : " + SI.sourceID);
+        currentSources.Add(SI.sourceID, SI);
 
+    }
     public static string sendMessageToSlab(string message, bool isUDP = false)
 	{   if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
         {

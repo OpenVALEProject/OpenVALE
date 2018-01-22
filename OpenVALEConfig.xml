@@ -4,5 +4,25 @@
 	<setting name="SpatialAudioServerRootDir" serializeAs="string">
 			<value>D:/VirtualAudio/SlabServer</value>
 		</setting>
+	<setting name="ASIOInputChannels" serializeAs="string">
+			<value>3,4,5,6</value>
+		</setting>
+	<setting name="ASIOOutputChannels" serializeAs="string">
+			<value>1,2</value>
+		</setting>
+	<setting name="HRTFDirectory" serializeAs="string">
+			<value>../../VirtualAudio/WaveFiles</value>
+		</setting>
+	<setting name="WavDirectory" serializeAs="string">
+			<value>../../VirtualAudio/HRTFs</value>
+		</setting>
+	<setting name="OutDeviceParams" serializeAs="string">
+			<value></value>
+		</setting>
+	<setting name="LevelName" serializeAs="string">
+				<value>GuessWho</value>
+			</setting>
+  
+  
   </applicationSettings>
 </configuration>
