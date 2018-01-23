@@ -5,7 +5,6 @@ Assets/VRStandardAssets/
 *.asset
 Library/
 Temp/
-*.sln
 *.csproj
 Assets/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs
 *.fbx
@@ -14,8 +13,6 @@ Assets/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs
 *.suo
 *.unity
 TestBuilds/
-/ClientSource/nbproject/private/
-/ClientSource/build/
 ClientSource/
 Assets/Standard Assets/Characters/FirstPersonCharacter/Scripts/MouseLook.cs
 *.prefab
@@ -33,13 +30,9 @@ DemoServer/
 UnityServerLog.txt
 logtext.txt
 Debugging Notes.txt
-Assets/LICENSE.txt
-AudioServer3.zip
-Assets/SteamVR/
+Assets/LICENSE.txtAssets/SteamVR/
 UnityPackageManager/manifest.json
-HRTFs/
 WaveFiles/
-Documentation/OpenVALEGuide.doc
 *.psd
 Assets/Standard Assets/ParticleSystems/
 Assets/Standard Assets/Utility/
@@ -51,7 +44,6 @@ Assets/OVRInspector/LICENSE.txt
 Assets/OVRInspector/
 *.dll
 Assets/Parse/
-*.unitypackage
 Assets/OVR/OVRGamepad.bundle/
 *.tif
 *.tga
