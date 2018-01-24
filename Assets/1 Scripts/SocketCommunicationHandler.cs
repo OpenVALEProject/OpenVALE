@@ -1392,7 +1392,20 @@ public class SocketCommunicationHandler : MonoBehaviour
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     if (paramList.Length > 0)
                     {
-                        UIDisplay.setMessage(paramList[0]);
+                        if (paramList.Length > 1)
+                        {
+                            string concantedMessage = "";
+                            for (int i = 0; i < paramList.Length; i++)
+                            {
+                                if(i!= paramList.Length-1)
+                                    concantedMessage += (paramList[i] + ",");
+                                else
+                                    concantedMessage += (paramList[i]);
+                            }
+                            UIDisplay.setMessage(concantedMessage);
+                        }
+                        else
+                            UIDisplay.setMessage(paramList[0]);
                     }
                     else
                     {
