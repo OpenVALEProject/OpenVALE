@@ -1,6 +1,4 @@
-Assets/TutorialInfo/
-Assets/VRSampleScenes/
-Assets/VRStandardAssets/
+Assets/
 *.meta
 *.asset
 Library/
@@ -11,6 +9,7 @@ Assets/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs
 *.mat
 *.png
 *.suo
+*.sln
 *.unity
 TestBuilds/
 ClientSource/
