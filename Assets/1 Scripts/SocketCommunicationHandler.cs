@@ -377,10 +377,10 @@ public class SocketCommunicationHandler : MonoBehaviour
                         }
                         if (success)
                         {
-                            reply = "setHRTF," + reply.Trim().Split()[2];
+                            reply = "setHRTF,0" ;
                         }
                         else
-                            reply = "setHRTF,0";
+                            reply = "setHRTF," + reply.Trim().Split()[1];
                     }
                     // else load the hrtf filename
                     else
