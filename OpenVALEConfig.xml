@@ -20,7 +20,7 @@
 				<value></value>
 			</setting>
 	<setting name="HMDType" serializeAs="string">
-			<value>Vive</value>
+			<value>None</value>
 		</setting>
   
   
