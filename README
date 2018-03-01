@@ -2,3 +2,23 @@ To test OpenVALE please use one of the avaiable clients.
 
 To access any of the assets used to make OpenVALE import the Unity package that is part of the repository.
 
+The main objective of OpenVALE is to provide a high-level interface to enable the rapid development and execution of virtual auditory localization experiments without the need for specialized experience developing virtual reality applications. 
+
+Several key feature of the system contribute to that goal:
+
+•	Realistic VR scene  - The 3D model of ALF, with geodesic speaker array, provides a plausible visual environment for conducting anechoic audio localization experiments where subject’s can see potential target locations
+
+•	Dynamic audio rendering with customizable HRTFs – OpenVALE provides a high-level audio source control (i.e. add/remove sources, change volume, move source location, change HRTF) without requiring the experimenter to implement low level audio signal processing or interfacing with head trackers.
+
+•	Mulitple source types – OpenVALE facilitates the inclusion of audio sources from real-time ASIO inputs, wavefiles, and slab3d’s built-in audio generators
+
+•	Multiple Pointing Response Methods – OpenVALE has built in functionality for using head-pointing and hand-pointing techniques along with visual cursors that can be used in free space or “snapped” to virtual speaker locations
+
+•	Location Highlighting – A color highlighting feature was added to OpenVALE, which takes arbitrary RGB values, to facilitate providing feedback on localization accuracy.
+
+•	Subject ID GUI – OpenVALE also has a built in functionality to collect a four digit “subjectID” from within the VR scene, to facilitate subject-initiated experimental setups
+
+
+OpenVALE  was designed to look and function as a high-quality simulation of the Auditory Localization Facility (ALF) at Wright-Patterson AFB in Dayton, Ohio, a large anechoic chamber with a dedicated geodesic speaker array designed specifically for spatial auditory research (Figure 2).  At its core OpenVALE is a C# application which utilizes the Unity Game Engine  for real-time virtual environment rendering and interactive control. For accurate visual simulation, a 3D model of the ALF was built using Blender, a 3D modelling and rendering package , and includes simplified models of the ALF acoustic treatments, LED and speaker arrays, and supporting structures.  Virtual audio simulation is provided through AudioServer3, a custom software application that encapsulates the slab3d spatial audio rendering application (Miller and Wenzel, 2002) for use as within Unity.  Interaction with, and display of, the virtual environment is provided through the use of commercially available VR headsets such as the Oculus Rift or HTC Vive, but also allows desktop-only viewing for ease of development.  The commercial VR headsets provide stereoscopic 3D visual display, and also enable 6-DOF tracking of a user’s head and hands.
+
+OpenVALE was written as a server application with a string-based interface accessible over traditional TCP/IP socket connections. This allows the design and control of virtual auditory localization experiments from a wide variety of client applications. Example software clients are provided for interacting with the server from Matlab, Python, and Java, and example code for a typical localization experiment in Matlab is provided in Appendix A.  However, a client could theoretically made constructed using any programming language capable of executing traditional TCP/IP socket connections.
