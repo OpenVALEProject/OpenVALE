@@ -42,10 +42,7 @@ public class LEDControls : MonoBehaviour {
 
 
             if (LED1ON)
-            {
-                LED1.GetComponent<Renderer>().material.SetColor("_Color", Color.red);
                 LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
-            }
             else
                 LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
             if (LED2ON)
@@ -67,10 +64,7 @@ public class LEDControls : MonoBehaviour {
             if (isHighlighted)
                 return;
             if (LED1ON)
-            {
-                LED1.GetComponent<Renderer>().material.SetColor("_Color", Color.red);
                 LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.red);
-            }
             else
                 LED1.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.1f, 0, 0));
             if (LED2ON)

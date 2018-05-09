@@ -1060,6 +1060,12 @@ public class SocketCommunicationHandler : MonoBehaviour
                     ConfigurationUtil.waitStartTime = Time.time;
                     reply = "";
                     break;
+                case "waitforresponseab":
+                    ConfigurationUtil.waitingForResponseAB = true;
+                    ConfigurationUtil.waitingClient = mC.sender;
+                    ConfigurationUtil.waitStartTime = Time.time;
+                    reply = "";
+                    break;
                 case "getsubjectnumber":
                     SubjectNumberCanvas.SetActive(true);
                     ConfigurationUtil.waitingForSubjectNum = true;

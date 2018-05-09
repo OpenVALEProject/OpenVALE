@@ -537,9 +537,13 @@ public class SLABCommunication : MonoBehaviour
             {
                 TriggerPressed();
             }
-            if (OVRInput.GetDown(OVRInput.Button.Two)) {
+            if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstick)) {
 
                 EscapeButtonPressed();
+            }
+            if (OVRInput.GetDown(OVRInput.Button.One) || OVRInput.GetDown(OVRInput.Button.Two))
+            {
+                ABPressed();
             }
         }
         else if (ConfigurationUtil.useVive )
@@ -564,6 +568,33 @@ public class SLABCommunication : MonoBehaviour
          }
         
 	}
+    private void ABPressed() {
+        if (ConfigurationUtil.waitingForResponseAB) {
+
+            string message = "waitForResponseAB," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",";
+            string responseType = "";
+            if (OVRInput.GetDown(OVRInput.Button.One))
+            {
+                responseType = "a";
+            }
+            else
+            {
+                responseType = "b";
+            }
+            message += responseType + ",";
+            float respTime = Time.time - ConfigurationUtil.waitStartTime;
+            message += respTime + "";
+            
+            
+
+            GetComponent<SocketCommunicationHandler>().sendMessage(message, ConfigurationUtil.waitingClient);
+            ConfigurationUtil.waitingForResponseAB = false;
+            ConfigurationUtil.waitingClient = null;
+            ConfigurationUtil.waitStartTime = 0.0f;
+
+        }
+
+    }
     private void TriggerPressed() {
 
         if (ConfigurationUtil.waitingForSubjectNum)
@@ -630,14 +661,17 @@ public class SLABCommunication : MonoBehaviour
                 else if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hmd)
                 {
                     if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
-                        intersectionPoint = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward * 2.08f;
+                        intersectionPoint = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward * 2.07f;
                     else
+                    {
                         intersectionPoint = (crossHair.transform.position - UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye)).normalized * 2.08f;
-                }
+                        //intersectionPoint = (crossHair.transform.position).normalized * 2.08f;
+                    }
+                    }
             }
             else
             {
-                intersectionPoint = Camera.main.transform.forward.normalized * 2.08f;
+                intersectionPoint = Camera.main.transform.forward.normalized * 2.07f;
             }
             string spkID = GetComponent<ALFLeds>().getNearestSpeakerID(intersectionPoint);
             message += spkID;

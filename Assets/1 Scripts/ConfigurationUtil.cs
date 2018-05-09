@@ -28,6 +28,7 @@ public static class ConfigurationUtil  {
     public static CursorType currentCursorType = CursorType.none;
     public static CursorAttachment currentCursorAttachment = CursorAttachment.none;
     public static bool waitingForResponse = false;
+    public static bool waitingForResponseAB = false;
     public static Socket waitingClient = null;
     public static float waitStartTime = 0.0f;
     public static bool waitingForRecenter = false;
