@@ -48,6 +48,10 @@ public class LevelLoader : MonoBehaviour
                         {
                             ConfigurationUtil.engineType = ConfigurationUtil.AudioEngineType.SLABServer;
                         }
+                        else if (spatialAudioNameCheck.ToLower().Equals("none")){
+                            ConfigurationUtil.engineType = ConfigurationUtil.AudioEngineType.None;
+                        }
+                        
                         rndrc = nn.SelectSingleNode("UseSpatialAudioServer");
                         break;
                     case ("ASIOOutputChannels"):

@@ -377,10 +377,10 @@ public class SocketCommunicationHandler : MonoBehaviour
                         }
                         if (success)
                         {
-                            reply = "setHRTF," + reply.Trim().Split()[2];
+                            reply = "setHRTF,0" ;
                         }
                         else
-                            reply = "setHRTF,0";
+                            reply = "setHRTF," + reply.Trim().Split()[1];
                     }
                     // else load the hrtf filename
                     else
@@ -946,6 +946,24 @@ public class SocketCommunicationHandler : MonoBehaviour
                     }
                     reply = "setleds," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
                     break;
+                case "acousticsparkler":
+                    paramList = match.Groups[2].Value.Trim().Split(',');
+                    if(paramList[0].ToLower().Equals("t")){
+                        ConfigurationUtil.isAcousticSparkler = true;
+                        ConfigurationUtil.acousticSparklerSourceID = paramList[1];
+                        GetComponent<SLABCommunication>().ToggleAcousticSparkler(true);                        
+                        SLABCommunication.sendMessageToSlab("enableSrc " + ConfigurationUtil.acousticSparklerSourceID + ",1");
+                        SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticSparklerSourceID + ",1");
+                    }
+                    else{
+                        GetComponent<SLABCommunication>().ToggleAcousticSparkler(false);                        
+                        SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticSparklerSourceID + ",1");
+                        SLABCommunication.sendMessageToSlab("enableSrc " + ConfigurationUtil.acousticSparklerSourceID + ",0");
+                        ConfigurationUtil.isAcousticSparkler = false;
+                        ConfigurationUtil.acousticSparklerSourceID = null;
+                    }
+                    reply = "acousticsparkler," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
+                    break;
                 case "showfreecursor":
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     GetComponent<SLABCommunication>().TurnOffSnappedCursor();
@@ -965,7 +983,12 @@ public class SocketCommunicationHandler : MonoBehaviour
                             
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hmd;
-
+                            if(ConfigurationUtil.isAcousticWand){
+                                SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticWandSourceID + ",1");
+                                SLABCommunication.sendMessageToSlab("enableSrc " + ConfigurationUtil.acousticWandSourceID + ",0");
+                                ConfigurationUtil.isAcousticWand = false;
+                                ConfigurationUtil.acousticWandSourceID = null;
+                            }
                         }
                         else
                         {
@@ -987,7 +1010,13 @@ public class SocketCommunicationHandler : MonoBehaviour
                           
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hand;
+                            if(ConfigurationUtil.isAcousticWand){
+                                SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticWandSourceID + ",1");
+                                SLABCommunication.sendMessageToSlab("enableSrc " + ConfigurationUtil.acousticWandSourceID + ",0");
+                                ConfigurationUtil.isAcousticWand = false;
+                                ConfigurationUtil.acousticWandSourceID = null;
 
+                            }
                         }
                         else
                         {
@@ -998,6 +1027,13 @@ public class SocketCommunicationHandler : MonoBehaviour
                     {
                         reply = "showfreecursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_PARAMETEROUTOFRANGE;
                     }
+                    if(paramList.Length>2 && paramList[1].ToLower().Equals("t")){
+                        ConfigurationUtil.isAcousticWand = true;
+                        ConfigurationUtil.acousticWandSourceID = paramList[2];
+                        SLABCommunication.sendMessageToSlab("enableSrc " + ConfigurationUtil.acousticWandSourceID + ",1");
+                        SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticWandSourceID + ",0");
+                    }
+
                     reply = "showfreecursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE;
 
                     break;
@@ -1018,7 +1054,13 @@ public class SocketCommunicationHandler : MonoBehaviour
                             GetComponent<SLABCommunication>().TurnOffSnappedCursor();
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hmd;
+                            if(ConfigurationUtil.isAcousticWand){
+                                SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticWandSourceID + ",1");
+                                SLABCommunication.sendMessageToSlab("enableSrc " + ConfigurationUtil.acousticWandSourceID + ",0");
+                                ConfigurationUtil.isAcousticWand = false;
+                                ConfigurationUtil.acousticWandSourceID = null;
 
+                            }
                         }
                         else
                         {
@@ -1038,12 +1080,24 @@ public class SocketCommunicationHandler : MonoBehaviour
                             GetComponent<SLABCommunication>().TurnOffSnappedCursor();
                             ConfigurationUtil.currentCursorType = ConfigurationUtil.CursorType.none;
                             ConfigurationUtil.currentCursorAttachment = ConfigurationUtil.CursorAttachment.hand;
+                            if(ConfigurationUtil.isAcousticWand){
+                                SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticWandSourceID + ",1");
+                                SLABCommunication.sendMessageToSlab("enableSrc " + ConfigurationUtil.acousticWandSourceID + ",0");
+                                ConfigurationUtil.isAcousticWand = false;
+                                ConfigurationUtil.acousticWandSourceID = null;
+                               
+                            }
                         }
                         else
                         {
                             reply = "showsnappedcursor," + (int)ERRORMESSAGES.ErrorType.ERR_AS_BOOLPARSEFAILURE;
                         }
-                        
+                        if(paramList.Length>2 && paramList[1].ToLower().Equals("t")){
+                            ConfigurationUtil.isAcousticWand = true;
+                            ConfigurationUtil.acousticWandSourceID = paramList[2];
+                            SLABCommunication.sendMessageToSlab("enableSrc " + ConfigurationUtil.acousticWandSourceID + ",1");
+                            SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticWandSourceID + ",0");
+                        }
                     }
                     else
                     {
@@ -1056,6 +1110,12 @@ public class SocketCommunicationHandler : MonoBehaviour
                     break;
                 case "waitforresponse":
                     ConfigurationUtil.waitingForResponse = true;
+                    ConfigurationUtil.waitingClient = mC.sender;
+                    ConfigurationUtil.waitStartTime = Time.time;
+                    reply = "";
+                    break;
+                case "waitforresponseab":
+                    ConfigurationUtil.waitingForResponseAB = true;
                     ConfigurationUtil.waitingClient = mC.sender;
                     ConfigurationUtil.waitStartTime = Time.time;
                     reply = "";
@@ -1209,6 +1269,9 @@ public class SocketCommunicationHandler : MonoBehaviour
                         break;
                     }
                     reply = "getSpeakerPosition," + (int)ERRORMESSAGES.ErrorType.ERR_AS_SPEAKERNOTFOUND;
+                    break;
+                case "getselectedspeaker":
+                    reply = "getselectedspeaker," + GetComponent<SLABCommunication>().GetSelectedSpeaker();
                     break;
                 case "adjustsourceposition":
                     //adjustSourcePosition(src, pos)
@@ -1392,7 +1455,20 @@ public class SocketCommunicationHandler : MonoBehaviour
                     paramList = match.Groups[2].Value.Trim().Split(',');
                     if (paramList.Length > 0)
                     {
-                        UIDisplay.setMessage(paramList[0]);
+                        if (paramList.Length > 1)
+                        {
+                            string concantedMessage = "";
+                            for (int i = 0; i < paramList.Length; i++)
+                            {
+                                if(i!= paramList.Length-1)
+                                    concantedMessage += (paramList[i] + ",");
+                                else
+                                    concantedMessage += (paramList[i]);
+                            }
+                            UIDisplay.setMessage(concantedMessage);
+                        }
+                        else
+                            UIDisplay.setMessage(paramList[0]);
                     }
                     else
                     {

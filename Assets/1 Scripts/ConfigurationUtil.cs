@@ -5,7 +5,7 @@ using System.Net.Sockets;
 public static class ConfigurationUtil  {
     public enum CursorAttachment{none,hand, hmd};
     public enum CursorType { none, crosshair, snapped};
-    public enum AudioEngineType {SLABServer,AudioServer3}
+    public enum AudioEngineType {SLABServer,AudioServer3,SteamAudio,None};
 
 	public static string HRTFDir = ".\\HRTFs";
 	//public static string HRTFName = "s81HT_FG_HD280_E100.slh";
@@ -28,6 +28,7 @@ public static class ConfigurationUtil  {
     public static CursorType currentCursorType = CursorType.none;
     public static CursorAttachment currentCursorAttachment = CursorAttachment.none;
     public static bool waitingForResponse = false;
+    public static bool waitingForResponseAB = false;
     public static Socket waitingClient = null;
     public static float waitStartTime = 0.0f;
     public static bool waitingForRecenter = false;
@@ -35,5 +36,9 @@ public static class ConfigurationUtil  {
     public static Vector3 recenterPosition = Vector3.zero;
     public static float recenterTolerance = 0;
     public static AudioEngineType engineType = AudioEngineType.SLABServer;
+    public static bool isAcousticWand = false;
+    public static string acousticWandSourceID = null;
+    public static bool isAcousticSparkler = false;
+    public static string acousticSparklerSourceID = null;
 
 }

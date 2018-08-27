@@ -46,13 +46,16 @@ public class SLABCommunication : MonoBehaviour
     public GameObject crossHair;
     public float crossHairDepth;
     public float viveCrossHairDepth;
-    public GameObject panelBase;
     public static Dictionary<int, SourceInformation> currentSources = new Dictionary<int, SourceInformation>();
     private bool enteredTolerance = false;
     private float toleranceTime = 0.0f;
     public Transform VIVEOffset;
     private GameObject currentlySelectedButton;
     public GameObject subjectNumberBeam;
+    public GameObject acousticSparkler;
+    public GameObject acousticSparklerSoundLocation;
+    private bool sparklerActive = false;
+    private List<OpenVALEAudioSource> OpenVALEAudioSources;
 
 	// Use this for initialization
 	void Start()
@@ -81,6 +84,11 @@ public class SLABCommunication : MonoBehaviour
             slabProcess.StartInfo.FileName = spatialAudioServerDirectory + "\\AudioServer3.exe";
             slabProcess.StartInfo.WorkingDirectory = spatialAudioServerDirectory + "\\";
         }
+        else {
+            OpenVALEAudioSources = new List<OpenVALEAudioSource>();
+            return;
+        }
+        
         slabProcess.Start();
         Thread.Sleep(500);
         while (true)
@@ -152,6 +160,8 @@ public class SLABCommunication : MonoBehaviour
     }
 
     public void Reset() {
+        if(ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.None)
+            return;
         if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.SLABServer)
         {
             sendMessageToSlab("freeSources()");
@@ -191,6 +201,8 @@ public class SLABCommunication : MonoBehaviour
     }
 
     public static void StartAudioEngine() {
+        if(ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.None)
+            return;
         if(slabProcess != null && !slabProcess.HasExited )
             slabProcess.Kill();
         
@@ -389,6 +401,25 @@ public class SLABCommunication : MonoBehaviour
 
             }
         }
+        //OVRInput.GetDown(OVRInput.Button.
+        if(ConfigurationUtil.isAcousticSparkler){
+            if (ConfigurationUtil.useRift && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger))
+            {
+                sparklerActive = !sparklerActive;
+                if(sparklerActive)
+                    SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticSparklerSourceID + ",0");
+                else
+                    SLABCommunication.sendMessageToSlab("muteSrc " + ConfigurationUtil.acousticSparklerSourceID + ",1");
+                acousticSparklerSoundLocation.SetActive(sparklerActive);
+            }
+            acousticSparkler.transform.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
+            acousticSparkler.transform.rotation = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch);
+            //acousticSparkler.transform.Translate((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 0.3f);
+            Vector3 acousticSparklerPos = HelperFunctions.UnityXYZToFLT(acousticSparklerSoundLocation.transform.position);
+            string sparklerMessage = "updateSrcXYZ " + ConfigurationUtil.acousticSparklerSourceID+ "," + acousticSparklerPos.x + "," + acousticSparklerPos.y + "," +acousticSparklerPos.z + "";
+            
+            sendMessageToSlab(sparklerMessage);
+        }
 
         if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hand) {
 
@@ -401,12 +432,16 @@ public class SLABCommunication : MonoBehaviour
 
                 // Vector3 camerPosition = camera.transform.position;
                 // Vector3 cameraForward = camera.transform.forward;
-
+                
                 
                 if (ConfigurationUtil.useRift)
                 {
-                    crossHair.transform.position = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
-                    crossHair.transform.position = crossHair.transform.position + ((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized) * crossHairDepth;
+                    //crossHair.transform.position = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
+                    crossHair.transform.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
+                    Vector3 intersectionPoint = RaySphereIntersection(OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch),((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized));
+                    crossHair.transform.position = intersectionPoint;
+                    crossHair.transform.position = intersectionPoint + ((OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch) - intersectionPoint).normalized*0.12f);
+                    //crossHair.transform.position = crossHair.transform.position + ((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized) * crossHairDepth;
                     
                 }
                 else if (ConfigurationUtil.useVive)
@@ -417,6 +452,16 @@ public class SLABCommunication : MonoBehaviour
                 }
                 crossHair.transform.LookAt(crossHair.transform.position + (UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward), UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.up);
                 crossHair.transform.Rotate(Vector3.right, -90);
+                if(ConfigurationUtil.isAcousticWand){
+                    //Vector3 intersectionPoint = RaySphereIntersection(OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch),((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized));
+                    //UnityEngine.Debug.Log(intersectionPoint);
+                    if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                    {
+                        Vector3 acousticPosition = HelperFunctions.UnityXYZToFLT(crossHair.transform.position); 
+                        string message = "updateSrcXYZ " + ConfigurationUtil.acousticWandSourceID+ "," + acousticPosition.x + "," + acousticPosition.y + "," +acousticPosition.z + "";
+                        sendMessageToSlab(message);
+                    }
+                }
            
             }
             else if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
@@ -424,7 +469,8 @@ public class SLABCommunication : MonoBehaviour
                 Vector3 intersectionLocation = Vector3.zero;
                 if (ConfigurationUtil.useRift)
                 {
-                    intersectionLocation = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
+                    //intersectionLocation = (OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized * 2.08f;
+                    intersectionLocation = RaySphereIntersection(OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch),((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized));
                 }
                 if (ConfigurationUtil.useVive) {
                     intersectionLocation = (SteamVR_Controller.Input(3).transform.rot * Vector3.forward).normalized * 2.08f;
@@ -433,6 +479,14 @@ public class SLABCommunication : MonoBehaviour
                 if (currentHighlightedObject != null)
                 {
                     currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(true, true, true, true);
+                    if(ConfigurationUtil.isAcousticWand){
+                    if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+                    {
+                        Vector3 acousticPosition = HelperFunctions.UnityXYZToFLT(currentHighlightedObject.transform.position); 
+                        string message = "updateSrcXYZ " + ConfigurationUtil.acousticWandSourceID+ "," + acousticPosition.x + "," + acousticPosition.y + "," +acousticPosition.z + "";
+                        sendMessageToSlab(message);
+                    }
+                }
                 }
             }
         }
@@ -537,9 +591,13 @@ public class SLABCommunication : MonoBehaviour
             {
                 TriggerPressed();
             }
-            if (OVRInput.GetDown(OVRInput.Button.Two)) {
+            if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstick)) {
 
                 EscapeButtonPressed();
+            }
+            if (OVRInput.GetDown(OVRInput.Button.One) || OVRInput.GetDown(OVRInput.Button.Two))
+            {
+                ABPressed();
             }
         }
         else if (ConfigurationUtil.useVive )
@@ -564,6 +622,33 @@ public class SLABCommunication : MonoBehaviour
          }
         
 	}
+    private void ABPressed() {
+        if (ConfigurationUtil.waitingForResponseAB) {
+
+            string message = "waitForResponseAB," + (int)ERRORMESSAGES.ErrorType.ERR_AS_NONE + ",";
+            string responseType = "";
+            if (OVRInput.GetDown(OVRInput.Button.One))
+            {
+                responseType = "a";
+            }
+            else
+            {
+                responseType = "b";
+            }
+            message += responseType + ",";
+            float respTime = Time.time - ConfigurationUtil.waitStartTime;
+            message += respTime + "";
+            
+            
+
+            GetComponent<SocketCommunicationHandler>().sendMessage(message, ConfigurationUtil.waitingClient);
+            ConfigurationUtil.waitingForResponseAB = false;
+            ConfigurationUtil.waitingClient = null;
+            ConfigurationUtil.waitStartTime = 0.0f;
+
+        }
+
+    }
     private void TriggerPressed() {
 
         if (ConfigurationUtil.waitingForSubjectNum)
@@ -630,14 +715,17 @@ public class SLABCommunication : MonoBehaviour
                 else if (ConfigurationUtil.currentCursorAttachment == ConfigurationUtil.CursorAttachment.hmd)
                 {
                     if (ConfigurationUtil.currentCursorType == ConfigurationUtil.CursorType.snapped)
-                        intersectionPoint = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward * 2.08f;
+                        intersectionPoint = UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.CenterEye) * Vector3.forward * 2.07f;
                     else
+                    {
                         intersectionPoint = (crossHair.transform.position - UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye)).normalized * 2.08f;
-                }
+                        //intersectionPoint = (crossHair.transform.position).normalized * 2.08f;
+                    }
+                    }
             }
             else
             {
-                intersectionPoint = Camera.main.transform.forward.normalized * 2.08f;
+                intersectionPoint = Camera.main.transform.forward.normalized * 2.07f;
             }
             string spkID = GetComponent<ALFLeds>().getNearestSpeakerID(intersectionPoint);
             message += spkID;
@@ -674,7 +762,7 @@ public class SLABCommunication : MonoBehaviour
                 {
                 //origin = UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.CenterEye);
                 origin = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
-                toDirection = ((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized) * 3f;
+                    toDirection = ((OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) * Vector3.forward).normalized) * 10f;
                 subjectNumberBeam.transform.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
                 subjectNumberBeam.transform.rotation = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch) ;
             }
@@ -731,7 +819,8 @@ public class SLABCommunication : MonoBehaviour
 
     void OnDestroy()
 	{
-
+        if(ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.None)
+                    return;
 		slabProcess.Kill();
 
 	}
@@ -816,8 +905,27 @@ public class SLABCommunication : MonoBehaviour
         currentSources[id].FLTPosition = FLTPosition;
 
     }
+    public Vector3 RaySphereIntersection(Vector3 orig, Vector3 dir){
+        Ray r = new Ray(orig, dir);
+        RaycastHit[] hits = Physics.RaycastAll(r, 50);
+        Vector3 sphereHitPoint = new Vector3(0,-1,0);
+        foreach (RaycastHit RCH in hits)
+        {
+            GameObject collisionObject = RCH.collider.gameObject;
+            if(collisionObject.tag.Equals("ALFSphere")){
+                sphereHitPoint = RCH.point;
+            }
+            UnityEngine.Debug.Log(collisionObject.tag);
+
+        }
+        return sphereHitPoint;
+    }
     public static string sendMessageToSlab(string message, bool isUDP = false)
-	{   if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
+    {
+        if(ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.None)
+            return "No Audio Engine";
+        
+        if (ConfigurationUtil.engineType == ConfigurationUtil.AudioEngineType.AudioServer3)
         {
             if (isUDP)
             {
@@ -868,6 +976,17 @@ public class SLABCommunication : MonoBehaviour
             return;
         currentHighlightedObject.GetComponent<LEDControls>().HighlightLEDs(false, false, false, false);
         currentHighlightedObject = null;
+    }
+    public string GetSelectedSpeaker(){
+        if(currentHighlightedObject != null)
+            return GetComponent<ALFLeds>().getNearestSpeakerID(currentHighlightedObject.transform.position);
+        else
+            return "-1";
+    }
+    public void ToggleAcousticSparkler(bool activate) {
+        acousticSparkler.SetActive(activate);
+        acousticSparklerSoundLocation.SetActive(false);
+        sparklerActive = false;            
     }
     
 }

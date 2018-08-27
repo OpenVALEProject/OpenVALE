@@ -71,8 +71,8 @@ Configuration Settings
 
 		HMDType 
 			- Possible values "Rift", “Vive”, or "None"
-If blank will default to Rift
-Use “None” for keyboard controls.  WASD to rotate and Spacebar to respond.
+* If blank will default to Rift
+* Use “None” for keyboard controls.  WASD to rotate and Spacebar to respond.
 
 Command List
 
@@ -105,9 +105,9 @@ Pre-render
 	
 	err = getSubjectNumber
 		- displays a number panel for entering subject numbers.
-- Subject number entered must be 1-4 digits
+      - Subject number entered must be 1-4 digits
 - Client expected to choose input method (ie Crosshair)
-- Example: getSubjectNumber()
+      - Example: getSubjectNumber()
 
 During Render Commands
 
@@ -148,22 +148,25 @@ During Render Commands
 		- Example setLEDs([f,l,t],[1,0,1,0])
 		- Example setLEDs(1,[1,0,1,0])
 	
-	err = showFreeCursor(whichCursor = {‘head’,’hand’}, T/F)
+	err = showFreeCursor(whichCursor = {‘head’,’hand’}, T/F,(optional)srcID)
 		- Shows the cursor attached to chosen object
+		- Optional sourceID, source will follow cursor
 		- Example showFreeCursor(head,T)
 	
-	err = showSnappedCursor(whichCursor = {‘head’,’hand’}, T/F)
+	err = showSnappedCursor(whichCursor = {‘head’,’hand’}, T/F,(optional)srcID)
 		- Turns on the LEDs of the speaker the user is pointing toward
-- Example showSnappedCursor(head,T)
+      - Optional sourceID, source will follow snapped location
+	
+      - Example showSnappedCursor(head,T)
 
 	err = reset()
 		- Stops rendering
 		- Removes all sources and HRTFs
-- Example reset()
+      - Example reset()
 
-	err = displayMessage(String)
-- Displays a message to the user
-- Example displayMesage(“Hello”)
+err = displayMessage(String)
+      - Displays a message to the user
+      - Example displayMesage(“Hello”)
 Runtime Queries
 	
 	spkID, respTime = waitForResponse()	
@@ -171,7 +174,12 @@ Runtime Queries
 		- Returns nearest speaker ID to the currently active cursor
 		- if no cursor is active, returns the nearest speaker to free cursor attached to the head
 	
-	err =waitForReCenter(spkID or position,tolerance)
+	buttonPressed,respTime = waitForResponseAB()
+- Waits for the subject to press the A or B button on the Rift controller
+- Returns the button pressed and the response time
+- Example : waitForResponseAB()
+
+      err =waitForReCenter(spkID or position,tolerance)
 		- Waits for the user to face a specified position or speaker
 		- Tolerance is in radians
 		- Example 1 : waitForReCenter(1,.1)
@@ -199,6 +207,15 @@ Runtime Queries
 		- Calling highlightLocation() will hide the highlight
 		- Example : highlightlocation(274,[1,.5,1])
 		- Example : highlightlocation([2,1.7,4],[1,.5,1])
+	
+      speakerID = getSeletedSpeaker()
+      - If SnappedCurosor is enabled returns the currently selected speaker
+      - else returns -1
+	
+	err = acousticSparkler(T/F.srcID)
+- Display the acoustic sparkler and attaches it to the Rift controller
+- Currently only supported with Rift
+- Example : acousticSparkler(T,1)
 
 
 Error Codes
